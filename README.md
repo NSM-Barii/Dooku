@@ -40,10 +40,12 @@ Portable wardriving rig built inside a hardened case. Raspberry Pi 5 running Kal
 - Raspberry Pi 5 (8GB)
 - Kali Linux Headless (64-bit)
 - ALFA AWUS1900 (RTL8814AU)
-- ALFA AWUS036ACS (RTL8821AU)
+- ALFA AWUS036ACS (RTL8821AU) ×4
 - Powered USB hub
 - Hardened carry case
 - Portable battery bank
+
+Full materials list with prices → [materials/README.md](materials/README.md)
 
 ---
 
