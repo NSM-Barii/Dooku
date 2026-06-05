@@ -1,9 +1,12 @@
-   python   git:(main)  rtl_433 -f 315M -f 433.92M -R 0
+ sudo rtl_433 -f 314.95M -f 433.92M 
 rtl_433 version 25.12 (2025-12-12) inputs file rtl_tcp RTL-SDR SoapySDR with TLS
-Disabling all device decoders.
 Detached kernel driver
 Found Rafael Micro R820T tuner
 [SDR] Using device 0: Nooelec, NESDR SMArt v5, SN: 78170231, "Generic RTL2832U OEM"
 Exact sample rate is: 250000.000414 Hz
 [R82XX] PLL not locked!
+bitbuffer_add_bit: Warning: row count limit (50 rows) reached
+
+
+
 
