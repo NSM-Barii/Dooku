@@ -17,6 +17,7 @@ Hardware and supplies purchased for the war rig build.
 | Item | Qty | Price |
 |------|-----|-------|
 | ALFA Network AWUS036ACS Wide-Coverage Dual-Band AC600 USB Wi-Fi Adapter | 4 | $29.95 ea ($119.80 total) |
+| VFAN USB GPS Receiver Antenna GMouse — Magnetic Base, for Laptop/PC/Car/Marine | 1 | $20.00 |
 
 ---
 
@@ -66,4 +67,4 @@ Hardware and supplies purchased for the war rig build.
 
 ---
 
-**Total: $496.58**
+**Total: $516.58**

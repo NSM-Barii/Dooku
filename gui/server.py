@@ -123,7 +123,7 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             kismet_conf = Path.home() / ".kismet" / "kismet_httpd.conf"
-            user, pw    = "kismet", "warrig"
+            user, pw    = "kismet", "dooku"
             try:
                 for line in kismet_conf.read_text().splitlines():
                     if line.startswith("httpd_username"): user = line.split("=", 1)[1].strip()

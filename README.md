@@ -19,16 +19,46 @@
 
 > **"I have become more powerful than any Jedi."** — Count Dooku
 
-Portable RF collection rig built inside a hardened case. Raspberry Pi 5 running Kali Linux, multiple WiFi adapters for passive wardriving, RTL-SDR for sub-GHz RF collection.
+Portable RF collection rig built inside a hardened case. Raspberry Pi 5 running Kali Linux, multiple WiFi adapters for passive wardriving, RTL-SDR for sub-GHz RF collection, and a u-blox GPS for location tagging. Powered by [flock-back](https://github.com/nsm-barii/flock-back) for WiFi probe request sniffing and BLE wardriving.
 
 ---
 
-## What It Does
+## How It Works
 
-- **AP on boot** — Pi creates its own WiFi hotspot (SSID: `Dooku`, password: `wardriving123`). Connect and SSH in at `10.10.10.1`
-- **Wardriving** — AWUS036ACS adapters run in monitor mode across 2.4GHz and 5GHz via [flock-back](https://github.com/nsm-barii/flock-back) and Kismet
-- **Sub-GHz RF** — Nooelec NESDR SMArt v5 for IoT/ISM band collection via `rtl_433`
-- **Dashboard** — Web UI at `http://10.10.10.1:5000` (manual start via `gui/server.py`)
+**1. Power it on**
+
+The AP comes up automatically. No screen, no keyboard needed.
+
+**2. Connect to the WiFi**
+
+```
+SSID:     Dooku
+Password: wardriving123
+```
+
+**3. SSH in**
+
+```bash
+ssh kali@10.10.10.1
+```
+
+**4. Start wardriving**
+
+```bash
+# Kismet — passive WiFi + GPS logging
+sudo kismet --no-ncurses
+
+# flock-back — WiFi probe + BLE wardriving
+cd /home/kali/Documents/nsm_tools/flock-back/src
+venv/bin/python main.py -w -k -p
+```
+
+**5. Open the web UI from your phone or laptop**
+
+| Tool | URL |
+|---|---|
+| Kismet | `http://10.10.10.1:2501` — login: `kismet` / `dooku` |
+| flock-back | `http://10.10.10.1:8000` |
 
 ---
 
@@ -38,6 +68,7 @@ Portable RF collection rig built inside a hardened case. Raspberry Pi 5 running 
 |---|---|
 | Raspberry Pi 5 | 8GB RAM, 128GB storage |
 | ALFA AWUS036ACS | RTL8821AU, AC600 — ×4 |
+| VFAN USB GPS GMouse | u-blox 7, magnetic base |
 | Nooelec NESDR SMArt v5 | RTL-SDR, sub-GHz/IoT RF |
 | IVETTO 7-Port USB 3.0 Hub | External powered |
 | Portable power station | 99.9Wh, 60W |
@@ -47,59 +78,58 @@ Full materials list with prices → [materials/README.md](materials/README.md)
 
 ---
 
-## Setup
+## Setup (First Time)
 
 ```bash
 sudo bash scripts/setup.sh
 ```
 
-Installs all dependencies, drivers, and registers systemd services. Reboot when done.
+Installs all dependencies, drivers, configures services and GPS, deploys Kismet config. Reboot when done.
 
 ---
 
 ## Services
 
-| Service | What it does | Default |
+| Service | What it does | Auto-start |
 |---|---|---|
-| `dooku` | Brings up the AP on boot | **Enabled** |
-| `flock-back` | flock-back wardriving suite | Disabled |
-
-Enable flock-back auto-start:
-```bash
-sudo systemctl enable flock-back
-sudo systemctl start flock-back
-```
+| `dooku` | Brings up the AP | Yes |
+| `flock-back` | flock-back wardriving suite | No — enable with `systemctl enable flock-back` |
+| `gpsd` | GPS daemon | Yes |
 
 ---
 
-## SSH Workflow
+## Logs
 
-```bash
-# 1. connect to Dooku WiFi
-# 2. ssh in
-ssh kali@10.10.10.1
-
-# start wardriving
-sudo kismet -c wlan1 -c wlan2 -c wlan3 -c wlan4 --no-ncurses
-
-# start flock-back manually
-cd /home/kali/Documents/nsm_tools/flock-back/src
-venv/bin/python main.py -w -k -p
-
-# sub-GHz RF
-sudo rtl_433 -f 314.95M -f 433.92M
+Kismet saves `.kismet` and WigleCSV files to:
 ```
+kismet/sessions/
+```
+
+Upload the WigleCSV to [wigle.net](https://wigle.net) after a session.
 
 ---
 
-## Scripts
+## Docs
 
-| Script | What it does |
+| File | What it covers |
 |---|---|
-| `setup.sh` | First-time install |
-| `install_drivers.sh` | Reinstall WiFi drivers only |
-| `start.py` | AP boot sequence (run by systemd) |
-| `database.py` | Shared utilities |
+| `kismet/first_time_setup.md` | Kismet initial setup |
+| `kismet/multi_adapter.md` | Running with 4 adapters |
+| `kismet/gps.md` | GPS setup and usage |
+| `kismet/logs.md` | Log location and formats |
+| `kismet/credentials.md` | Changing Kismet login |
+
+---
+
+## Contributing & Issues
+
+Found a bug? Have a suggestion? Want to add something?
+
+- **Open a pull request** if you have a fix or improvement
+- **Open a discussion** if you have a question or idea
+- **Open an issue** if something is broken
+
+All feedback welcome — this is a living project.
 
 ---
 

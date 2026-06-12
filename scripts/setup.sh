@@ -12,6 +12,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE="$(dirname "$SCRIPT_DIR")"
 FLOCK_DIR="$(dirname "$BASE")/flock-back"
+FLOCK_SRC="$FLOCK_DIR/src"
 KERNEL=$(uname -r)
 ARCH=$(uname -m)
 
@@ -24,7 +25,7 @@ echo ""
 # ── SYSTEM DEPS ───────────────────────────────────────────
 echo "[+] Installing system packages..."
 apt update -qq || true
-apt install -y tshark hostapd dnsmasq rfkill iw bluetooth bluez python3 python3-venv bc dkms build-essential git libelf-dev wget gnupg
+apt install -y tshark hostapd dnsmasq rfkill iw bluetooth bluez python3 python3-venv bc dkms build-essential git libelf-dev wget gnupg gpsd gpsd-clients
 echo "[+] System packages installed"
 echo ""
 
@@ -101,7 +102,7 @@ if [ ! -d "$FLOCK_DIR" ]; then
     git clone https://github.com/NSM-Barii/flock-back.git "$FLOCK_DIR"
 fi
 
-cd "$FLOCK_DIR/src"
+cd "$FLOCK_SRC"
 python3 -m venv venv
 venv/bin/pip install -q -r "$FLOCK_DIR/requirements.txt"
 echo "[+] flock-back venv ready"
@@ -127,14 +128,24 @@ EOF
 systemctl restart NetworkManager 2>/dev/null || true
 echo "[+] wlan0 unmanaged by NetworkManager"
 
+# configure gpsd for u-blox GPS on ttyACM0
+sed -i 's|DEVICES=""|DEVICES="/dev/ttyACM0"|' /etc/default/gpsd 2>/dev/null || true
+systemctl enable gpsd 2>/dev/null || true
+echo "[+] gpsd enabled (GPS on /dev/ttyACM0)"
+
 # install dooku service (AP only — starts automatically)
 sed "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/venv/bin/python $SCRIPT_DIR/start.py|" \
     "$BASE/config/dooku.service" > /etc/systemd/system/dooku.service
 
 # install flock-back service (disabled by default — enable with: systemctl enable flock-back)
-FLOCK_DIR="$(dirname "$BASE")/flock-back/src"
-sed "s|WorkingDirectory=.*|WorkingDirectory=$FLOCK_DIR|; s|ExecStart=.*|ExecStart=$FLOCK_DIR/venv/bin/python main.py -w -k -p|" \
+sed "s|WorkingDirectory=.*|WorkingDirectory=$FLOCK_SRC|; s|ExecStart=.*|ExecStart=$FLOCK_SRC/venv/bin/python main.py -w -k -p|" \
     "$BASE/config/flock-back.service" > /etc/systemd/system/flock-back.service
+
+# deploy kismet site config — substitute actual project path
+mkdir -p "$BASE/kismet/sessions"
+sed "s|DOOKU_BASE|$BASE|g" "$BASE/config/kismet_site.conf" > /etc/kismet/kismet_site.conf
+echo "[+] Kismet site config deployed → /etc/kismet/kismet_site.conf"
+echo "[+] Kismet logs → $BASE/kismet/sessions/"
 
 systemctl daemon-reload
 systemctl enable dooku.service

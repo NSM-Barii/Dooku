@@ -1,3 +1,15 @@
+# Python
 gui/__pycache__
 scripts/__pycache__
+scripts/venv/
 
+# Kismet logs — stay local, not in the repo
+kismet/sessions/
+*.kismet
+*.kismet-journal
+*.wiglecsv
+*.pcapng
+
+# Claude Code
+.claude/settings.local.json
+**/.claude/settings.local.json
