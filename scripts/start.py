@@ -1,248 +1,58 @@
-# THIS MODULE WILL HOUSE THE BOOT SEQUENCE FOR THE WAR RIG
-
-
-
-# UI IMPORTS
-from rich.panel import Panel
-
-
-# ETC IMPORTS
 import subprocess, time
 from pathlib import Path
+from rich.console import Console
 
-
-# NSM IMPORTS
-from database import Variables, Utilities
-
-
-# CONSTANTS
-console      = Variables.console
+console      = Console()
 BASE         = Path(__file__).parent.parent
 HOSTAPD_CONF = BASE / "config" / "hostapd.conf"
 DNSMASQ_CONF = BASE / "config" / "dnsmasq.conf"
-SERVER       = BASE / "gui" / "server.py"
-FLOCK_DIR    = Path(__file__).parent.parent.parent / "flock-back" / "src"
-KISMET_CONF  = Path.home() / ".kismet" / "kismet_httpd.conf"
 
+AP_IFACE = "wlan0"
+AP_IP    = "10.10.10.1/24"
 
 
+def start():
 
-class Boot():
-    """This will be responsible for booting the war rig"""
+    console.print("[bold green][+] Dooku starting[/bold green]")
 
+    # unblock RF
+    subprocess.run(["rfkill", "unblock", "all"],                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    AP_IFACE = "wlan0"
-    AP_IP    = "10.10.10.1/24"
+    # kill any running hostapd
+    subprocess.run(["systemctl", "stop", "hostapd"],                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["pkill", "-x", "hostapd"],                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(1)
 
+    # release wlan0 from NetworkManager
+    subprocess.run(["nmcli", "dev", "set", AP_IFACE, "managed", "no"],              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    @classmethod
-    def _unblock_rf(cls):
-        """Unblock all RF interfaces"""
+    # configure interface
+    subprocess.run(["ip", "link", "set",   AP_IFACE, "down"],                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["ip", "addr", "flush", "dev", AP_IFACE],                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["ip", "addr", "add",   AP_IP,  "dev", AP_IFACE],               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["ip", "link", "set",   AP_IFACE, "up"],                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(1)
 
-        Utilities.unblock_rf()
-        console.print("[bold green][+][/bold green]  RF unblocked")
+    # deploy dnsmasq config and start
+    subprocess.run(["systemctl", "stop", "dnsmasq"],                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["cp", str(DNSMASQ_CONF), "/etc/dnsmasq.d/dooku.conf"],          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["systemctl", "start", "dnsmasq"],                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(1)
 
+    # start hostapd
+    subprocess.Popen(["hostapd", str(HOSTAPD_CONF)], stdout=subprocess.DEVNULL)
+    time.sleep(3)
 
-    @classmethod
-    def _setup_kismet_auth(cls):
-        """Pre-create Kismet httpd credentials so it can run headlessly on first boot"""
+    if subprocess.run(["pgrep", "-x", "hostapd"], stdout=subprocess.DEVNULL).returncode != 0:
+        console.print(f"[bold red][!] hostapd failed — check {HOSTAPD_CONF}[/bold red]")
+        return
 
-        if KISMET_CONF.exists(): return
+    console.print("[bold green][+] AP live — SSID: Dooku @ 10.10.10.1[/bold green]")
 
-        try:
-            KISMET_CONF.parent.mkdir(parents=True, exist_ok=True)
-            KISMET_CONF.write_text("httpd_username=kismet\nhttpd_password=warrig\n")
-            console.print("[bold green][+][/bold green]  Kismet credentials created")
-        except Exception as e:
-            console.print(f"[bold red][!] Could not write Kismet config:[bold yellow] {e}")
-
-
-    @classmethod
-    def _set_monitor_mode(cls):
-        """Put all non-AP wireless interfaces into monitor mode"""
-
-        try:
-            result  = subprocess.run(["iw", "dev"], capture_output=True, text=True)
-            ifaces  = []
-            current = None
-
-            for line in result.stdout.splitlines():
-                line = line.strip()
-                if line.startswith("Interface"):
-                    current = line.split()[1]
-                elif current and line.startswith("type") and "monitor" not in line:
-                    if current != cls.AP_IFACE:
-                        ifaces.append(current)
-                    current = None
-
-            for iface in ifaces:
-                Utilities.set_monitor_mode(iface=iface, verbose=True)
-
-            return ifaces
-
-        except Exception as e:
-            console.print(f"[bold red][!] Monitor mode error:[bold yellow] {e}")
-            return []
-
-
-    @classmethod
-    def _start_ap(cls):
-        """Bring up the AP on wlan0"""
-
-        console.print(f"[bold green][+][/bold green]  Bringing up AP on {cls.AP_IFACE}...")
-
-        try:
-            # kill any existing hostapd
-            subprocess.run(["systemctl", "stop",  "hostapd"],                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["pkill",     "-x",    "hostapd"],                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            time.sleep(1)
-
-            # release from NetworkManager if it's running
-            subprocess.run(["nmcli", "dev", "set", cls.AP_IFACE, "managed", "no"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-            # configure interface
-            subprocess.run(["ip", "link", "set",   cls.AP_IFACE, "down"],           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["ip", "addr", "flush", "dev", cls.AP_IFACE],            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["ip", "addr", "add",   cls.AP_IP, "dev", cls.AP_IFACE], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["ip", "link", "set",   cls.AP_IFACE, "up"],             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            time.sleep(1)  # let kernel finish binding IP before dnsmasq starts
-
-            # stop dnsmasq, drop in our config, start fresh
-            subprocess.run(["systemctl", "stop",  "dnsmasq"],                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["cp", str(DNSMASQ_CONF), "/etc/dnsmasq.d/dooku.conf"],  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["systemctl", "start", "dnsmasq"],                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            time.sleep(1)  # let dnsmasq bind before hostapd starts bringing clients in
-
-            # start hostapd (no -B — Popen keeps it running without daemonizing)
-            subprocess.Popen(["hostapd", str(HOSTAPD_CONF)],                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-            time.sleep(3)
-
-            result = subprocess.run(["pgrep", "-x", "hostapd"], stdout=subprocess.DEVNULL)
-
-            if result.returncode != 0:
-                console.print(f"[bold red][!] hostapd failed — check {HOSTAPD_CONF}[/bold red]")
-                return False
-
-            console.print("[bold green][+][/bold green]  AP live — SSID: Dooku @ 10.10.10.1")
-            return True
-
-        except Exception as e: console.print(f"[bold red][!] AP Error:[bold yellow] {e}")
-
-
-    @classmethod
-    def _get_monitor_ifaces(cls):
-        """Find all wireless interfaces currently in monitor mode"""
-
-        try:
-            result  = subprocess.run(["iw", "dev"], capture_output=True, text=True)
-            ifaces  = []
-            current = None
-
-            for line in result.stdout.splitlines():
-                line = line.strip()
-                if line.startswith("Interface"): current = line.split()[1]
-                if line.startswith("type monitor") and current:
-                    ifaces.append(current)
-                    current = None
-
-            return ifaces
-
-        except Exception: return []
-
-
-    @classmethod
-    def _start_kismet(cls):
-        """Launch Kismet in headless mode using all detected monitor interfaces"""
-
-        ifaces = cls._get_monitor_ifaces()
-
-        if not ifaces:
-            console.print("[bold red][!] No monitor interfaces found — skipping Kismet[/bold red]"); return None
-
-        cmd = ["kismet", "--no-ncurses"]
-        for iface in ifaces: cmd += ["-c", iface]
-
-        console.print(f"[bold green][+][/bold green]  Starting Kismet on {ifaces}...")
-
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-
-        time.sleep(6)
-
-        if process.poll() is not None:
-            console.print("[bold red][!] Kismet failed to start[/bold red]"); return None
-
-        console.print(f"[bold green][+][/bold green]  Kismet running (PID {process.pid}) @ http://127.0.0.1:2501")
-
-        # wait for kismet REST API to be ready before flock-back starts polling
-        import urllib.request
-        for _ in range(10):
-            try:
-                urllib.request.urlopen("http://127.0.0.1:2501", timeout=2)
-                break
-            except Exception:
-                time.sleep(2)
-
-        return process
-
-
-    @classmethod
-    def _start_flock(cls):
-        """Launch flock-back in wardriver mode"""
-
-        if not FLOCK_DIR.exists():
-            console.print(f"[bold red][!] flock-back not found at {FLOCK_DIR}[/bold red]"); return None
-
-        console.print("[bold green][+][/bold green]  Launching flock-back in wardriver mode...")
-
-        venv_python = str(FLOCK_DIR / "venv" / "bin" / "python")
-
-        process = subprocess.Popen(
-            [venv_python, "main.py", "-w", "-k", "-p"],
-            cwd=str(FLOCK_DIR)
-        )
-
-        console.print(f"[bold green][+][/bold green]  flock-back running (PID {process.pid})")
-        return process
-
-
-    @classmethod
-    def _start_dashboard(cls):
-        """Launch the dashboard server — blocks until SSH MODE is triggered"""
-
-        console.print("[bold green][+][/bold green]  Starting Dooku dashboard at http://10.10.10.1:5000")
-
-        venv_python = str(Path(__file__).parent / "venv" / "bin" / "python")
-        subprocess.run([venv_python, str(SERVER)])
-
-
-    @classmethod
-    def main(cls):
-        """Run from here"""
-
-        console.print(f"[bold green][+] Dooku starting")
-
-        cls._unblock_rf()
-        cls._setup_kismet_auth()
-
-        if not cls._start_ap(): return False
-
-        cls._set_monitor_mode()
-
-        kismet = cls._start_kismet()
-        flock  = cls._start_flock()
-
-        cls._start_dashboard()
-
-        if flock:  flock.kill()
-        if kismet: kismet.kill()
-
-
+    # keep process alive so systemd doesn't restart it
+    while True:
+        time.sleep(60)
 
 
 if __name__ == "__main__":
-    Boot.main()
+    start()

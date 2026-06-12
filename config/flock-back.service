@@ -1,0 +1,17 @@
+[Unit]
+Description=flock-back wardriving suite
+After=dooku.service
+Requires=dooku.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/kali/Documents/nsm_tools/flock-back/src
+ExecStart=/home/kali/Documents/nsm_tools/flock-back/src/venv/bin/python main.py -w -k -p
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

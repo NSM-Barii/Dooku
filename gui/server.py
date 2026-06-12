@@ -8,10 +8,7 @@ from rich.console import Console; console = Console()
 # ETC IMPORTS
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-import json, subprocess, threading, sys
-
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
-from kismet import Kismet_Client
+import json, subprocess, threading, urllib.request, urllib.error, base64
 
 
 # CONSTANTS
@@ -124,15 +121,42 @@ class Handler(BaseHTTPRequestHandler):
     def _serve_kismet(self):
         """This method will be responsible for proxying Kismet device data"""
 
+        try:
+            kismet_conf = Path.home() / ".kismet" / "kismet_httpd.conf"
+            user, pw    = "kismet", "warrig"
+            try:
+                for line in kismet_conf.read_text().splitlines():
+                    if line.startswith("httpd_username"): user = line.split("=", 1)[1].strip()
+                    if line.startswith("httpd_password"): pw   = line.split("=", 1)[1].strip()
+            except Exception: pass
 
-        devices, err = Kismet_Client.get_devices()
+            token = base64.b64encode(f"{user}:{pw}".encode()).decode()
+            body  = json.dumps({"fields": [
+                ["kismet.device.base.macaddr",  "mac"],
+                ["kismet.device.base.name",     "name"],
+                ["kismet.device.base.type",     "type"],
+                ["kismet.device.base.signal/kismet.common.signal.last_signal", "rssi"],
+                ["kismet.device.base.channel",  "channel"],
+                ["kismet.device.base.manuf",    "vendor"],
+            ]}).encode()
 
-        if err:
-            payload = json.dumps({"error": err}).encode()
-            self.send_response(503)
-        else:
-            payload = json.dumps(devices).encode()
+            req = urllib.request.Request(
+                "http://127.0.0.1:2501/devices/summary/devices.json",
+                data=body, method="POST",
+                headers={"Authorization": f"Basic {token}", "Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=3) as r:
+                data = json.loads(r.read())
+                if isinstance(data, dict): data = data.get("devices", [])
+            payload = json.dumps(data).encode()
             self.send_response(200)
+
+        except urllib.error.URLError:
+            payload = json.dumps({"error": "Kismet not running"}).encode()
+            self.send_response(503)
+        except Exception as e:
+            payload = json.dumps({"error": str(e)}).encode()
+            self.send_response(503)
 
         self.send_header("Content-Type", "application/json")
         self.send_header("Access-Control-Allow-Origin", "*")

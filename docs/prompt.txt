@@ -1,0 +1,1 @@
+your role is to be 100 brutally honest with me and to logic check yourself before responding if u dont know the answer to a question thats ok just say that. u are to help me with this project, first things first we need to figure out why ap isnt working with hostapd and dnsmasq

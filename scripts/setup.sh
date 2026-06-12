@@ -122,17 +122,24 @@ systemctl disable dnsmasq 2>/dev/null || true
 mkdir -p /etc/NetworkManager/conf.d
 cat > /etc/NetworkManager/conf.d/dooku-unmanaged.conf <<'EOF'
 [keyfile]
-unmanaged-devices=interface-name:wlan0
+unmanaged-devices=interface-name:wlan0;interface-name:wlan1;interface-name:wlan2;interface-name:wlan3;interface-name:wlan4
 EOF
 systemctl restart NetworkManager 2>/dev/null || true
 echo "[+] wlan0 unmanaged by NetworkManager"
 
-# install dooku service
+# install dooku service (AP only — starts automatically)
 sed "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/venv/bin/python $SCRIPT_DIR/start.py|" \
     "$BASE/config/dooku.service" > /etc/systemd/system/dooku.service
+
+# install flock-back service (disabled by default — enable with: systemctl enable flock-back)
+FLOCK_DIR="$(dirname "$BASE")/flock-back/src"
+sed "s|WorkingDirectory=.*|WorkingDirectory=$FLOCK_DIR|; s|ExecStart=.*|ExecStart=$FLOCK_DIR/venv/bin/python main.py -w -k -p|" \
+    "$BASE/config/flock-back.service" > /etc/systemd/system/flock-back.service
+
 systemctl daemon-reload
 systemctl enable dooku.service
-echo "[+] dooku.service enabled"
+echo "[+] dooku.service enabled (AP auto-start)"
+echo "[+] flock-back.service installed but disabled — run: systemctl enable flock-back to auto-start"
 echo ""
 
 

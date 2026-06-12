@@ -1,7 +1,6 @@
 [Unit]
 Description=Dooku NSM Suite
 After=NetworkManager.service bluetooth.target
-Conflicts=hostapd.service dnsmasq.service
 
 [Service]
 Type=simple
