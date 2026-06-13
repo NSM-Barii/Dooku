@@ -14,33 +14,39 @@ KISMET_URL   = "http://127.0.0.1:2501"
 KISMET_CONF  = Path.home() / ".kismet" / "kismet_httpd.conf"
 
 DEVICE_FIELDS = [
-    ["kismet.device.base.macaddr",                                                                "mac"       ],
-    ["kismet.device.base.name",                                                                   "name"      ],
-    ["kismet.device.base.type",                                                                   "type"      ],
-    ["kismet.device.base.signal/kismet.common.signal.last_signal",                               "rssi"      ],
-    ["kismet.device.base.signal/kismet.common.signal.max_signal",                                "rssi_max"  ],
-    ["kismet.device.base.channel",                                                                "channel"   ],
-    ["kismet.device.base.frequency",                                                              "frequency" ],
-    ["kismet.device.base.manuf",                                                                  "vendor"    ],
-    ["kismet.device.base.last_time",                                                              "last_seen" ],
-    ["kismet.device.base.first_time",                                                             "first_seen"],
-    ["kismet.device.base.packets/kismet.device.base.packets.total",                              "packets"   ],
-    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ssid",            "ssid"      ],
-    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.crypt_string",    "encryption"],
-    ["kismet.device.base.location/kismet.common.location.last/kismet.common.location.geopoint", "geopoint"  ],
-    ["dot11.device/dot11.device.num_associated_clients",                                          "clients"   ],
+    ["kismet.device.base.macaddr",                                                                "mac"        ],
+    ["kismet.device.base.name",                                                                   "name"       ],
+    ["kismet.device.base.type",                                                                   "type"       ],
+    ["kismet.device.base.signal/kismet.common.signal.last_signal",                               "rssi"       ],
+    ["kismet.device.base.signal/kismet.common.signal.max_signal",                                "rssi_max"   ],
+    ["kismet.device.base.signal/kismet.common.signal.min_signal",                                "rssi_min"   ],
+    ["kismet.device.base.channel",                                                                "channel"    ],
+    ["kismet.device.base.frequency",                                                              "frequency"  ],
+    ["kismet.device.base.manuf",                                                                  "vendor"     ],
+    ["kismet.device.base.last_time",                                                              "last_seen"  ],
+    ["kismet.device.base.first_time",                                                             "first_seen" ],
+    ["kismet.device.base.packets/kismet.device.base.packets.total",                              "packets"    ],
+    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ssid",            "ssid"       ],
+    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.crypt_string",    "encryption" ],
+    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ht_mode",         "ht_mode"    ],
+    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.maxrate",         "max_rate"   ],
+    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.dot11d_country",  "country"    ],
+    ["dot11.device/dot11.device.wpa_handshake_list",                                             "handshakes" ],
+    ["kismet.device.base.location/kismet.common.location.last/kismet.common.location.geopoint", "geopoint"   ],
+    ["dot11.device/dot11.device.num_associated_clients",                                         "clients"    ],
 ]
 
 
 class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        if   self.path == "/":               self._serve_html()
-        elif self.path == "/data":           self._serve_data()
-        elif self.path == "/kismet":         self._serve_kismet_legacy()
-        elif self.path == "/kismet/devices": self._serve_kismet_devices()
-        elif self.path == "/kismet/status":  self._serve_kismet_status()
-        elif self.path == "/ssh-mode":       self._ssh_mode()
+        if   self.path == "/":                        self._serve_html()
+        elif self.path == "/data":                    self._serve_data()
+        elif self.path == "/kismet":                  self._serve_kismet_legacy()
+        elif self.path.startswith("/kismet/devices"): self._serve_kismet_devices()
+        elif self.path == "/kismet/status":           self._serve_kismet_status()
+        elif self.path.startswith("/kismet/device/"): self._serve_device_detail()
+        elif self.path == "/ssh-mode":                self._ssh_mode()
         else:
             self.send_response(404)
             self.end_headers()
@@ -118,9 +124,35 @@ class Handler(BaseHTTPRequestHandler):
         self._json(devices)
 
     def _serve_kismet_devices(self):
+        from urllib.parse import urlparse, parse_qs
+        since = parse_qs(urlparse(self.path).query).get("since", [None])[0]
+        body  = json.dumps({"fields": DEVICE_FIELDS}).encode()
         try:
-            body = json.dumps({"fields": DEVICE_FIELDS}).encode()
-            self._json(self._kpost("/devices/summary/devices.json", body))
+            if since:
+                # delta — only devices updated since last poll
+                devices = self._kpost(f"/devices/last-time/{since}/devices.json", body)
+            else:
+                # initial load — 500 most recently seen
+                devices = self._kpost("/devices/views/all/devices.json", body)
+                devices.sort(key=lambda d: d.get("last_seen", 0), reverse=True)
+                devices = devices[:500]
+            self._json(devices)
+        except urllib.error.URLError:
+            self._json({"error": "Kismet not running"}, 503)
+        except Exception as e:
+            self._json({"error": str(e)}, 503)
+
+    def _serve_device_detail(self):
+        mac = self.path.split("/kismet/device/")[-1].upper()
+        try:
+            body = json.dumps({
+                "fields": DEVICE_FIELDS + [
+                    ["dot11.device/dot11.device.advertised_ssid_map", "ssid_map"],
+                ],
+                "regex": [["kismet.device.base.macaddr", f"^{mac}$"]]
+            }).encode()
+            devices = self._kpost("/devices/views/all/devices.json", body)
+            self._json(devices[0] if devices else {})
         except urllib.error.URLError:
             self._json({"error": "Kismet not running"}, 503)
         except Exception as e:
@@ -148,7 +180,7 @@ class Handler(BaseHTTPRequestHandler):
                 ["kismet.device.base.channel",                                         "channel"],
                 ["kismet.device.base.manuf",                                           "vendor" ],
             ]}).encode()
-            self._json(self._kpost("/devices/summary/devices.json", body))
+            self._json(self._kpost("/devices/views/all/devices.json", body))
         except urllib.error.URLError:
             self._json({"error": "Kismet not running"}, 503)
         except Exception as e:

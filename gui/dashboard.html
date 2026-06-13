@@ -85,6 +85,45 @@
       background: rgba(0,210,106,0.08);
     }
 
+    .session-pill {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #111;
+      color: var(--muted2);
+      border: 1px solid #222;
+    }
+
+    .obfuscate-btn {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #111;
+      color: var(--muted2);
+      border: 1px solid #222;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .obfuscate-btn.on {
+      background: rgba(255,214,10,0.1);
+      color: var(--sig-mid);
+      border-color: rgba(255,214,10,0.4);
+    }
+
+    .coords-bar {
+      padding: 0 16px 8px;
+      font-size: 10px;
+      font-family: monospace;
+      color: var(--sig-good);
+      letter-spacing: 0.5px;
+      display: none;
+    }
+    .coords-bar.visible { display: block; }
+
     .pulse {
       width: 8px; height: 8px;
       border-radius: 50%;
@@ -224,7 +263,10 @@
       display: flex;
       flex-direction: column;
       gap: 7px;
+      cursor: pointer;
+      transition: border-color 0.15s;
     }
+    .card:active { border-color: #333; }
 
     .card.ap     { border-left: 3px solid var(--wifi);   }
     .card.client { border-left: 3px solid var(--client); }
@@ -365,6 +407,126 @@
       letter-spacing: 0.5px;
     }
 
+    /* ── DETAIL SHEET ── */
+    .sheet-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    .sheet-overlay.open { display: block; }
+
+    .sheet {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      z-index: 101;
+      max-height: 85vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+      padding-bottom: 30px;
+    }
+    .sheet.open { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: #333;
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+
+    .sheet-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .sheet-sub {
+      font-size: 11px;
+      color: var(--muted2);
+      font-family: monospace;
+    }
+    .sheet-badges {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .sheet-section {
+      padding: 14px 18px 0;
+    }
+    .sheet-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted2);
+      margin-bottom: 8px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .detail-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .detail-item.full { grid-column: 1 / -1; }
+    .detail-val {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .detail-lbl {
+      font-size: 10px;
+      color: var(--muted2);
+      letter-spacing: 0.3px;
+    }
+
+    .sig-detail {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sig-detail-bar {
+      flex: 1;
+      height: 6px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .sig-detail-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    .ssid-history-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--muted2);
+      margin-bottom: 6px;
+      font-family: monospace;
+    }
+
     /* ── BOTTOM BAR ── */
     .bottom {
       position: fixed;
@@ -382,22 +544,7 @@
       gap: 8px;
     }
 
-    .ssh-btn {
-      background: var(--wifi-bg);
-      color: var(--wifi);
-      border: 1px solid rgba(220,20,60,0.3);
-      border-radius: 7px;
-      padding: 5px 12px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    .ssh-btn:active { background: #2a0410; }
-
-    .brand {
+.brand {
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 3px;
@@ -412,10 +559,12 @@
   <div class="header-row">
     <div class="logo">DOOKU</div>
     <div class="header-right">
+      <span class="session-pill" id="session-pill">00:00:00</span>
       <span class="gps-pill" id="gps-pill">GPS</span>
       <div class="pulse" id="pulse"></div>
     </div>
   </div>
+  <div class="coords-bar" id="coords-bar"></div>
 
   <div class="stats">
     <div class="stat s-total">  <div class="val" id="s-total">0</div>  <div class="lbl">Total</div>  </div>
@@ -461,9 +610,20 @@
 
 <div class="feed" id="feed"></div>
 
+<div class="sheet-overlay" id="sheet-overlay"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="sheet-title"></div>
+    <div class="sheet-sub"  id="sheet-sub"></div>
+    <div class="sheet-badges" id="sheet-badges"></div>
+  </div>
+  <div id="sheet-body"></div>
+</div>
+
 <div class="bottom">
   <span id="last-update">Waiting...</span>
-  <button class="ssh-btn" id="ssh-btn">SSH MODE</button>
+  <button class="obfuscate-btn" id="obfuscate-btn">Hide Info</button>
   <span class="brand">DOOKU</span>
 </div>
 
@@ -479,14 +639,47 @@
   let activeEnc    = "all";
   let activeSort   = "rssi";
   let kismetOnline = false;
+  let obfuscated   = false;
+
+  const deviceMap  = {};  // mac -> full device object for sheet lookup
 
   const sessionStart = Date.now() / 1000;
 
   const $  = id => document.getElementById(id);
-  const pulse      = $("pulse");
-  const feed       = $("feed");
-  const lastUpdate = $("last-update");
-  const gpsPill    = $("gps-pill");
+  const pulse       = $("pulse");
+  const feed        = $("feed");
+  const lastUpdate  = $("last-update");
+  const gpsPill     = $("gps-pill");
+  const sessionPill = $("session-pill");
+  const coordsBar   = $("coords-bar");
+
+  let kismetStartSec = null;
+
+  function maskMac(mac) {
+    if (!mac || !obfuscated) return mac;
+    const parts = mac.split(":");
+    return parts.slice(0, 3).join(":") + ":??:??:??";
+  }
+
+  function maskSsid(ssid) {
+    if (!ssid || !obfuscated) return ssid;
+    if (ssid === "<hidden>" || ssid === "<unknown>") return ssid;
+    const keep = Math.min(3, ssid.length);
+    return ssid.slice(0, keep) + "*".repeat(Math.max(0, ssid.length - keep));
+  }
+
+  function fmtDuration(secs) {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  setInterval(() => {
+    if (!kismetStartSec) return;
+    const elapsed = Math.floor(Date.now() / 1000) - kismetStartSec;
+    sessionPill.textContent = fmtDuration(elapsed);
+  }, 1000);
 
 
   // ── HELPERS ───────────────────────────────────────────────
@@ -561,41 +754,42 @@
   // ── CARD RENDERERS ────────────────────────────────────────
 
   function apCard(d) {
-    const ssid    = (d.ssid && d.ssid !== 0) ? d.ssid : (d.name || "<hidden>");
+    const ssid    = maskSsid((d.ssid && d.ssid !== 0) ? d.ssid : (d.name || "<hidden>"));
+    const mac     = maskMac(d.mac || "");
     const band    = getBand(d.frequency);
     const bandStr = band ? `${band}GHz` : "";
     const ch      = d.channel  || "?";
     const vendor  = d.vendor   || "";
-    const clients = d.clients > 0 ? `${d.clients} cli · ` : "";
     const pkts    = fmtPkts(d.packets);
-    const meta    = [ch !== "?" ? `ch ${ch}` : "", bandStr, clients + pkts].filter(Boolean).join(" · ");
+    const meta    = [ch !== "?" ? `ch ${ch}` : "", bandStr, pkts].filter(Boolean).join(" · ");
 
     return `
-      <div class="card ap">
+      <div class="card ap" onclick="openSheet(deviceMap['${d.mac}'])">
         <div class="card-top">
           <div class="badges">
             ${encBadge(d.encryption)}
+            ${d.clients > 0 ? `<span class="badge b-cl">${d.clients} CLI</span>` : ""}
             ${isNew(d)  ? '<span class="badge b-new">NEW</span>' : ""}
             ${hasGps(d) ? '<span class="badge b-gps">GPS</span>' : ""}
           </div>
           ${rssiHTML(d.rssi)}
         </div>
         <div class="device-name">${ssid}</div>
-        <div class="device-sub">${d.mac || ""}${vendor ? " · " + vendor : ""}</div>
+        <div class="device-sub">${mac}${vendor ? " · " + vendor : ""}</div>
         ${meta ? `<div class="device-meta">${meta}</div>` : ""}
       </div>`;
   }
 
   function clientCard(d) {
-    const name   = d.name || d.mac || "—";
-    const sub    = d.name && d.mac ? d.mac : "";
+    const name   = maskSsid(d.name) || maskMac(d.mac) || "—";
+    const sub    = d.name && d.mac ? maskMac(d.mac) : "";
     const vendor = d.vendor || "";
     const band   = getBand(d.frequency);
     const ch     = d.channel || "?";
     const meta   = [ch !== "?" ? `ch ${ch}` : "", band ? `${band}GHz` : "", fmtPkts(d.packets)].filter(Boolean).join(" · ");
 
     return `
-      <div class="card client">
+      <div class="card client" onclick="openSheet(deviceMap['${d.mac}'])">
         <div class="card-top">
           <div class="badges">
             <span class="badge b-cl">CLIENT</span>
@@ -610,13 +804,13 @@
   }
 
   function bleCard(d) {
-    const name   = d.name   || "<unknown>";
+    const name   = maskSsid(d.name || "<unknown>");
     const vendor = d.vendor || "";
     const pkts   = fmtPkts(d.packets);
     const sub    = String(d.type || "").toUpperCase();
 
     return `
-      <div class="card ble">
+      <div class="card ble" onclick="openSheet(deviceMap['${d.mac}'])">
         <div class="card-top">
           <div class="badges">
             <span class="badge b-ble">${sub || "BLE"}</span>
@@ -625,7 +819,7 @@
           ${rssiHTML(d.rssi)}
         </div>
         <div class="device-name">${name}</div>
-        <div class="device-sub">${d.mac || ""}${vendor ? " · " + vendor : ""}</div>
+        <div class="device-sub">${maskMac(d.mac) || ""}${vendor ? " · " + vendor : ""}</div>
         ${pkts ? `<div class="device-meta">${pkts}</div>` : ""}
       </div>`;
   }
@@ -633,8 +827,8 @@
   function sourceCard(s) {
     const name    = s["kismet.datasource.name"]      || "Unknown";
     const iface   = s["kismet.datasource.interface"] || "?";
-    const running = s["kismet.datasource.running"]   === true;
-    const error   = s["kismet.datasource.error"]     === true;
+    const running = s["kismet.datasource.running"]   === 1 || s["kismet.datasource.running"]  === true;
+    const error   = s["kismet.datasource.error"]     === 1 || s["kismet.datasource.error"]    === true;
     const ch      = s["kismet.datasource.channel"]   || "—";
     const numSrc  = s["kismet.datasource.num_packets"];
 
@@ -706,20 +900,35 @@
     $("s-ble").textContent    = ble;
     $("s-new").textContent    = newCnt;
 
+    if (sources.length) {
+      const totalRate = sources.reduce((sum, s) => {
+        const rrd = s["kismet.datasource.packets_rrd"];
+        return sum + (rrd ? (rrd["kismet.common.rrd.last_value_n1"] || 0) : 0);
+      }, 0);
+      $("s-pkts").textContent = totalRate > 0 ? totalRate : "—";
+    }
+
     if (sysStatus) {
-      const rate = sysStatus["kismet.system.packets.packetrate"]
-                ?? sysStatus["kismet.system.packets.rate"];
-      $("s-pkts").textContent = rate != null ? Math.round(rate) : "—";
+      const start = sysStatus["kismet.system.timestamp.start_sec"];
+      if (start) kismetStartSec = start;
     }
 
     if (gpsData) {
-      const fix = gpsData["kismet.common.location.fix"];
-      if (fix >= 2) {
-        gpsPill.className   = "gps-pill fix";
-        gpsPill.textContent = "GPS FIX";
+      const fix    = gpsData["kismet.common.location.fix"];
+      const gp     = gpsData["kismet.common.location.geopoint"];
+      if (fix >= 2 && gp && (gp[0] !== 0 || gp[1] !== 0)) {
+        const lat = gp[1].toFixed(6);
+        const lon = gp[0].toFixed(6);
+        const spd = gpsData["kismet.common.location.speed"];
+        const spdStr = spd > 0 ? ` · ${(spd * 3.6).toFixed(1)} km/h` : "";
+        gpsPill.className    = "gps-pill fix";
+        gpsPill.textContent  = "GPS FIX";
+        coordsBar.className  = "coords-bar visible";
+        coordsBar.textContent = `${lat}, ${lon}${spdStr}`;
       } else {
         gpsPill.className   = "gps-pill";
         gpsPill.textContent = "GPS";
+        coordsBar.className = "coords-bar";
       }
     }
   }
@@ -727,16 +936,26 @@
 
   // ── POLLING ───────────────────────────────────────────────
 
+  let lastPollTime = null;
+
   async function pollDevices() {
+    const url = lastPollTime
+      ? `/kismet/devices?since=${Math.floor(lastPollTime - 1)}`
+      : "/kismet/devices";
+
     try {
-      const res  = await fetch("/kismet/devices");
+      const now  = Date.now() / 1000;
+      const res  = await fetch(url);
       const data = await res.json();
 
       if (res.ok && Array.isArray(data)) {
-        devices      = data;
+        // merge delta into map — never replace everything
+        data.forEach(d => { if (d.mac) deviceMap[d.mac] = d; });
+        devices      = Object.values(deviceMap);
+        lastPollTime = now;
         kismetOnline = true;
         pulse.className        = "pulse live";
-        lastUpdate.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        lastUpdate.textContent = `${devices.length} devices · ${new Date().toLocaleTimeString()}`;
         updateStats();
         render();
       } else {
@@ -805,10 +1024,166 @@
     render();
   });
 
-  $("ssh-btn").addEventListener("click", async () => {
-    if (!confirm("Drop AP and switch to SSH mode?")) return;
-    await fetch("/ssh-mode");
+  $("obfuscate-btn").addEventListener("click", () => {
+    obfuscated = !obfuscated;
+    const btn  = $("obfuscate-btn");
+    btn.textContent = obfuscated ? "Show Info" : "Hide Info";
+    btn.className   = obfuscated ? "obfuscate-btn on" : "obfuscate-btn";
+    if (obfuscated) coordsBar.className = "coords-bar";
+    render();
   });
+
+
+
+  // ── DETAIL SHEET ─────────────────────────────────────────
+
+  const sheet        = $("sheet");
+  const sheetOverlay = $("sheet-overlay");
+
+  async function openSheet(d) {
+    if (!d) return;
+    try {
+      const res  = await fetch(`/kismet/device/${d.mac}`);
+      const full = await res.json();
+      if (full && full.mac) d = full;
+    } catch {}
+
+    const ssid   = maskSsid((d.ssid && d.ssid !== 0) ? d.ssid : (d.name || "<hidden>"));
+    const mac    = maskMac(d.mac || "");
+    const vendor = d.vendor || "";
+
+    $("sheet-title").textContent  = ssid;
+    $("sheet-sub").textContent    = mac + (vendor ? " · " + vendor : "");
+    $("sheet-badges").innerHTML   = [
+      encBadge(d.encryption),
+      d.clients > 0 ? `<span class="badge b-cl">${d.clients} CLI</span>` : "",
+      isNew(d)       ? '<span class="badge b-new">NEW</span>'             : "",
+      hasGps(d)      ? '<span class="badge b-gps">GPS</span>'             : "",
+    ].join("");
+
+    const fmtTime = ts => ts ? new Date(ts * 1000).toLocaleTimeString() : "—";
+    const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString() : "—";
+    const active  = (d.first_seen && d.last_seen)
+      ? fmtDuration(d.last_seen - d.first_seen) : "—";
+
+    const sigPct  = rssi => Math.max(4, Math.min(100, ((rssi + 90) / 60) * 100));
+    const sigCol  = rssi => sigPct(rssi) > 66 ? "var(--sig-good)" : sigPct(rssi) > 33 ? "var(--sig-mid)" : "var(--sig-bad)";
+
+    const band    = getBand(d.frequency);
+    const freq    = d.frequency ? `${(d.frequency / 1000).toFixed(0)} MHz` : "—";
+    const rate    = d.max_rate  ? `${(d.max_rate / 10).toFixed(0)} Mbps`  : "—";
+    const country = (d.country && d.country !== "0") ? d.country : "—";
+
+    const hsCount = Array.isArray(d.handshakes) ? d.handshakes.length
+                  : (d.handshakes && d.handshakes > 0) ? d.handshakes : 0;
+
+    // SSID history from ssid_map
+    let ssidHistory = "";
+    if (Array.isArray(d.ssid_map) && d.ssid_map.length > 1) {
+      ssidHistory = `
+        <div class="sheet-section">
+          <div class="sheet-label">SSID History</div>
+          ${d.ssid_map.map(s => `<div class="ssid-history-item">${maskSsid(s["dot11.advertisedssid.ssid"] || "hidden")}</div>`).join("")}
+        </div>`;
+    }
+
+    const geoStr = hasGps(d) && Array.isArray(d.geopoint)
+      ? `${d.geopoint[1].toFixed(6)}, ${d.geopoint[0].toFixed(6)}` : null;
+
+    $("sheet-body").innerHTML = `
+      <div class="sheet-section">
+        <div class="sheet-label">Signal</div>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-val" style="color:${sigCol(d.rssi)}">${d.rssi ?? "—"} dBm</div>
+            <div class="sig-detail-bar" style="margin-top:6px"><div class="sig-detail-fill" style="width:${d.rssi ? sigPct(d.rssi) : 0}%;background:${sigCol(d.rssi)}"></div></div>
+            <div class="detail-lbl" style="margin-top:4px">Current</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val" style="color:${sigCol(d.rssi_max)}">${d.rssi_max ?? "—"} dBm</div>
+            <div class="sig-detail-bar" style="margin-top:6px"><div class="sig-detail-fill" style="width:${d.rssi_max ? sigPct(d.rssi_max) : 0}%;background:${sigCol(d.rssi_max)}"></div></div>
+            <div class="detail-lbl" style="margin-top:4px">Best</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-section" style="margin-top:12px">
+        <div class="sheet-label">Network</div>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-val">ch ${d.channel || "?"}</div>
+            <div class="detail-lbl">${freq}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val">${band ? band + " GHz" : "—"}</div>
+            <div class="detail-lbl">Band</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val">${d.ht_mode || "—"}</div>
+            <div class="detail-lbl">HT Mode</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val">${rate}</div>
+            <div class="detail-lbl">Max Rate</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val">${country}</div>
+            <div class="detail-lbl">Country</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val" style="color:${hsCount > 0 ? 'var(--sig-mid)' : 'var(--muted2)'}">${hsCount}</div>
+            <div class="detail-lbl">Handshakes</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-section" style="margin-top:12px">
+        <div class="sheet-label">Activity</div>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-val">${fmtTime(d.first_seen)}</div>
+            <div class="detail-lbl">First Seen · ${fmtDate(d.first_seen)}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val">${fmtTime(d.last_seen)}</div>
+            <div class="detail-lbl">Last Seen</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val">${active}</div>
+            <div class="detail-lbl">Active For</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-val">${(d.packets || 0).toLocaleString()}</div>
+            <div class="detail-lbl">Packets</div>
+          </div>
+        </div>
+      </div>
+
+      ${geoStr ? `
+      <div class="sheet-section" style="margin-top:12px">
+        <div class="sheet-label">Last Known Location</div>
+        <div class="detail-grid">
+          <div class="detail-item full">
+            <div class="detail-val" style="font-family:monospace;font-size:13px;color:var(--sig-good)">${geoStr}</div>
+            <div class="detail-lbl">GPS Coordinates</div>
+          </div>
+        </div>
+      </div>` : ""}
+
+      ${ssidHistory}
+    `;
+
+    sheetOverlay.className = "sheet-overlay open";
+    sheet.className        = "sheet open";
+  }
+
+  function closeSheet() {
+    sheet.className        = "sheet";
+    sheetOverlay.className = "sheet-overlay";
+  }
+
+  sheetOverlay.addEventListener("click", closeSheet);
+  sheet.addEventListener("click", e => e.stopPropagation());
 
 
   // ── START ─────────────────────────────────────────────────
