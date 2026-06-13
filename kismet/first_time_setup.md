@@ -20,6 +20,19 @@ Save and close. Kismet reads this file on every startup.
 
 ---
 
+## Stop Kismet (Important)
+
+**Never use `pkill kismet`** — the RTL driver hangs during teardown and freezes the whole system.
+
+Always stop Kismet via the API:
+```bash
+curl -s -u kismet:dooku http://127.0.0.1:2501/system/shutdown.json
+```
+
+Or from the web UI at `http://10.10.10.1:2501` → hamburger menu → Shutdown.
+
+---
+
 ## Start Kismet
 
 ```bash
