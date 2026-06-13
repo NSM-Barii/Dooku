@@ -23,7 +23,8 @@ if pgrep -x kismet &>/dev/null; then
     kill -9 $(pgrep -x kismet) 2>/dev/null
 fi
 
-# kill tmux session if it exists
-tmux kill-session -t kismet 2>/dev/null && echo "[+] tmux session closed"
+# kill tmux sessions
+tmux kill-session -t kismet    2>/dev/null && echo "[+] kismet tmux session closed"
+tmux kill-session -t dashboard 2>/dev/null && echo "[+] dashboard tmux session closed"
 
-echo "[+] Kismet stopped"
+echo "[+] Done"

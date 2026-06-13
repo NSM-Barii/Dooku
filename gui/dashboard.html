@@ -6,19 +6,24 @@
   <title>Dooku</title>
   <style>
     :root {
-      --bg:        #080808;
-      --surface:   #0f0f0f;
-      --border:    #1e1414;
-      --text:      #ececec;
-      --muted:     #555;
-      --wifi:      #dc143c;
-      --wifi-bg:   #1a0208;
-      --ble:       #4eaaff;
-      --ble-bg:    #091a2e;
-      --kismet:    #c8a84b;
-      --kismet-bg: #1a1408;
-      --rssi:      #ff6b35;
-      --accent:    #fff;
+      --bg:         #080808;
+      --surface:    #0f0f0f;
+      --surface2:   #141414;
+      --border:     #1e1414;
+      --text:       #ececec;
+      --muted:      #4a4a4a;
+      --muted2:     #888;
+
+      --wifi:       #dc143c;
+      --wifi-bg:    #1a0208;
+      --client:     #9b59b6;
+      --client-bg:  #120a1a;
+      --ble:        #4eaaff;
+      --ble-bg:     #091a2e;
+
+      --sig-good:   #00d26a;
+      --sig-mid:    #ffd60a;
+      --sig-bad:    #ff6b35;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -28,7 +33,7 @@
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       min-height: 100vh;
-      padding-bottom: 80px;
+      padding-bottom: 64px;
     }
 
     /* ── HEADER ── */
@@ -36,10 +41,9 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(8,8,8,0.92);
+      background: rgba(8,8,8,0.95);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 16px 20px 0;
       border-bottom: 1px solid var(--border);
     }
 
@@ -47,14 +51,38 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      padding: 14px 16px 0;
+      margin-bottom: 12px;
     }
 
     .logo {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 800;
-      letter-spacing: 4px;
+      letter-spacing: 5px;
       color: var(--wifi);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .gps-pill {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #111;
+      color: var(--muted2);
+      border: 1px solid #222;
+      transition: all 0.3s;
+    }
+    .gps-pill.fix {
+      color: var(--sig-good);
+      border-color: rgba(0,210,106,0.3);
+      background: rgba(0,210,106,0.08);
     }
 
     .pulse {
@@ -62,45 +90,100 @@
       border-radius: 50%;
       background: var(--muted);
       transition: background 0.3s;
+      flex-shrink: 0;
     }
     .pulse.live { background: var(--wifi); box-shadow: 0 0 8px var(--wifi); }
 
     /* ── STATS ── */
     .stats {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 14px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      padding: 0 12px 12px;
     }
 
     .stat {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 0;
+      border-radius: 10px;
+      padding: 8px 4px;
       text-align: center;
     }
 
     .stat .val {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: 700;
       line-height: 1;
     }
-
     .stat .lbl {
-      font-size: 10px;
-      letter-spacing: 1px;
+      font-size: 8px;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
-      color: var(--muted);
-      margin-top: 4px;
+      color: var(--muted2);
+      margin-top: 3px;
     }
 
-    .stat.total   .val { color: var(--accent); }
-    .stat.wifi    .val { color: var(--wifi); }
-    .stat.ble     .val { color: var(--ble); }
-    .stat.packets .val { color: var(--rssi); }
+    .stat.s-total  .val { color: #fff; }
+    .stat.s-ap     .val { color: var(--wifi); }
+    .stat.s-client .val { color: var(--client); }
+    .stat.s-ble    .val { color: var(--ble); }
+    .stat.s-new    .val { color: var(--sig-mid); }
+    .stat.s-pkts   .val { color: var(--sig-bad); }
 
-    /* ── MAIN TABS ── */
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      padding: 0 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pills {
+      display: flex;
+      gap: 5px;
+      flex-wrap: nowrap;
+    }
+
+    .pill {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 4px 9px;
+      border-radius: 20px;
+      border: 1px solid #222;
+      background: transparent;
+      color: var(--muted2);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .pill.active {
+      background: var(--wifi-bg);
+      color: var(--wifi);
+      border-color: rgba(220,20,60,0.4);
+    }
+
+    .sort-select {
+      margin-left: auto;
+      background: var(--surface);
+      color: var(--muted2);
+      border: 1px solid #222;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 4px 6px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ── TABS ── */
     .tabs {
       display: flex;
       border-top: 1px solid var(--border);
@@ -108,140 +191,219 @@
 
     .tab {
       flex: 1;
-      padding: 12px 0;
+      padding: 11px 0;
       text-align: center;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: var(--muted);
+      color: var(--muted2);
       cursor: pointer;
       border-bottom: 2px solid transparent;
       transition: color 0.2s, border-color 0.2s;
     }
-
-    .tab.active { color: var(--wifi); border-color: var(--wifi); }
-
-    .tab.kismet-link {
-      color: var(--kismet);
-      border-bottom: 2px solid transparent;
-    }
-    .tab.kismet-link:active { border-color: var(--kismet); }
+    .tab.active       { color: var(--wifi);   border-color: var(--wifi);   }
+    .tab.active.t-cl  { color: var(--client); border-color: var(--client); }
+    .tab.active.t-ble { color: var(--ble);    border-color: var(--ble);    }
+    .tab.active.t-src { color: var(--muted2); border-color: var(--muted2); }
 
     /* ── FEED ── */
     .feed {
-      padding: 14px 16px;
+      padding: 12px 12px 0;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     /* ── CARDS ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px 16px;
+      border-radius: 12px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
     }
 
-    .card.wifi { border-left: 3px solid var(--wifi); }
-    .card.ble  { border-left: 3px solid var(--ble); }
+    .card.ap     { border-left: 3px solid var(--wifi);   }
+    .card.client { border-left: 3px solid var(--client); }
+    .card.ble    { border-left: 3px solid var(--ble);    }
+    .card.source { border-left: 3px solid #333;          }
 
     .card-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
     }
 
-    .badge {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      padding: 3px 9px;
-      border-radius: 6px;
+    .badges {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+      align-items: center;
+      min-width: 0;
     }
 
-    .badge.wifi { background: var(--wifi-bg); color: var(--wifi); }
-    .badge.ble  { background: var(--ble-bg);  color: var(--ble); }
-
-    .rssi { font-size: 13px; color: var(--rssi); font-weight: 600; }
-
-    .name {
-      font-size: 16px;
+    /* ── SIGNAL BAR ── */
+    .rssi-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .rssi-val {
+      font-size: 12px;
       font-weight: 600;
-      color: var(--accent);
+      font-family: monospace;
+      min-width: 34px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .sig-bar {
+      width: 44px;
+      height: 5px;
+      background: #222;
+      border-radius: 3px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .sig-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    /* ── DEVICE INFO ── */
+    .device-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
-    .mac {
-      font-size: 12px;
-      color: var(--muted);
-      font-family: monospace;
-      letter-spacing: 0.5px;
-    }
-
-    .meta { display: flex; gap: 12px; flex-wrap: wrap; }
-    .meta span { font-size: 11px; color: var(--muted); }
-    .meta span b { color: #888; }
-
-    .frames {
+    .device-sub {
       font-size: 11px;
+      color: var(--muted2);
+      font-family: monospace;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .device-meta {
+      font-size: 11px;
+      color: var(--muted2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .device-meta b { color: #666; font-weight: 500; }
+
+    /* ── BADGES ── */
+    .badge {
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .badge.wpa3   { background: rgba(0,210,106,0.12);  color: #00d26a; }
+    .badge.wpa2   { background: rgba(78,170,255,0.12); color: #4eaaff; }
+    .badge.wpa    { background: rgba(255,214,10,0.12); color: #ffd60a; }
+    .badge.wep    { background: rgba(255,107,53,0.15); color: #ff6b35; }
+    .badge.open   { background: rgba(220,20,60,0.12);  color: #dc143c; }
+    .badge.b-new  { background: rgba(255,214,10,0.15); color: #ffd60a; }
+    .badge.b-gps  { background: rgba(0,210,106,0.12);  color: #00d26a; }
+    .badge.b-cl   { background: rgba(155,89,182,0.12); color: #9b59b6; }
+    .badge.b-ble  { background: rgba(78,170,255,0.12); color: #4eaaff; }
+
+    .src-ok      { background: rgba(0,210,106,0.12);  color: #00d26a; }
+    .src-err     { background: rgba(220,20,60,0.12);  color: #dc143c; }
+    .src-stopped { background: rgba(74,74,74,0.2);    color: #666;    }
+
+    /* ── SOURCES ── */
+    .source-name {
+      font-size: 14px;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 6px;
-      background: #1a0800;
-      color: var(--rssi);
+      color: var(--text);
+    }
+    .source-iface {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted2);
+      font-family: monospace;
     }
 
-    .frames.hot {
-      background: #2a1000;
-      color: #ff4500;
-      box-shadow: 0 0 6px rgba(255,69,0,0.3);
-    }
-
-    /* ── EMPTY ── */
+    /* ── OFFLINE / EMPTY ── */
     .empty {
       text-align: center;
-      color: var(--muted);
-      font-size: 14px;
+      color: var(--muted2);
+      font-size: 13px;
       padding: 60px 20px;
     }
-    .empty .icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .offline-banner {
+      margin: 12px;
+      padding: 14px 16px;
+      background: rgba(220,20,60,0.08);
+      border: 1px solid rgba(220,20,60,0.2);
+      border-radius: 10px;
+      font-size: 12px;
+      color: #dc143c;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
 
     /* ── BOTTOM BAR ── */
     .bottom {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      background: rgba(8,8,8,0.95);
+      background: rgba(8,8,8,0.96);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-top: 1px solid var(--border);
-      padding: 12px 20px;
+      padding: 10px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 11px;
-      color: var(--muted);
+      font-size: 10px;
+      color: var(--muted2);
+      gap: 8px;
     }
 
     .ssh-btn {
-      background: #1a0208;
-      color: #dc143c;
-      border: 1px solid #dc143c44;
-      border-radius: 8px;
-      padding: 5px 14px;
-      font-size: 11px;
+      background: var(--wifi-bg);
+      color: var(--wifi);
+      border: 1px solid rgba(220,20,60,0.3);
+      border-radius: 7px;
+      padding: 5px 12px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 1px;
       cursor: pointer;
       transition: background 0.2s;
+      white-space: nowrap;
     }
     .ssh-btn:active { background: #2a0410; }
+
+    .brand {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--wifi);
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -249,108 +411,412 @@
 <header>
   <div class="header-row">
     <div class="logo">DOOKU</div>
-    <div class="pulse" id="pulse"></div>
+    <div class="header-right">
+      <span class="gps-pill" id="gps-pill">GPS</span>
+      <div class="pulse" id="pulse"></div>
+    </div>
   </div>
 
-  <div class="stats" id="flock-stats">
-    <div class="stat total">  <div class="val" id="cnt-total">0</div><div class="lbl">Total</div></div>
-    <div class="stat wifi">   <div class="val" id="cnt-wifi">0</div> <div class="lbl">WiFi</div></div>
-    <div class="stat ble">    <div class="val" id="cnt-ble">0</div>  <div class="lbl">BLE</div></div>
-    <div class="stat packets"><div class="val" id="cnt-pkts">0</div> <div class="lbl">Pkts</div></div>
+  <div class="stats">
+    <div class="stat s-total">  <div class="val" id="s-total">0</div>  <div class="lbl">Total</div>  </div>
+    <div class="stat s-ap">     <div class="val" id="s-ap">0</div>     <div class="lbl">APs</div>     </div>
+    <div class="stat s-client"> <div class="val" id="s-client">0</div> <div class="lbl">Clients</div> </div>
+    <div class="stat s-ble">    <div class="val" id="s-ble">0</div>    <div class="lbl">BLE</div>     </div>
+    <div class="stat s-new">    <div class="val" id="s-new">0</div>    <div class="lbl">New</div>     </div>
+    <div class="stat s-pkts">   <div class="val" id="s-pkts">—</div>   <div class="lbl">Pkts/s</div> </div>
+  </div>
+
+  <div class="filter-bar" id="filter-bar">
+    <div class="filter-row">
+      <div class="pills" id="band-pills">
+        <button class="pill active" data-band="all">ALL</button>
+        <button class="pill"        data-band="2.4">2.4</button>
+        <button class="pill"        data-band="5">5GHz</button>
+        <button class="pill"        data-band="6">6GHz</button>
+      </div>
+      <select class="sort-select" id="sort-select">
+        <option value="rssi">Signal</option>
+        <option value="name">Name</option>
+        <option value="packets">Packets</option>
+        <option value="first">First Seen</option>
+      </select>
+    </div>
+    <div class="filter-row" id="enc-row">
+      <div class="pills" id="enc-pills">
+        <button class="pill active" data-enc="all">ALL</button>
+        <button class="pill"        data-enc="open">OPEN</button>
+        <button class="pill"        data-enc="wpa2">WPA2</button>
+        <button class="pill"        data-enc="wpa3">WPA3</button>
+      </div>
+    </div>
   </div>
 
   <div class="tabs">
-    <div class="tab active">FLOCK</div>
-    <div class="tab kismet-link" id="kismet-btn">KISMET ↗</div>
+    <div class="tab active"  data-tab="networks">NETWORKS</div>
+    <div class="tab t-cl"    data-tab="clients">CLIENTS</div>
+    <div class="tab t-ble"   data-tab="ble">BLE</div>
+    <div class="tab t-src"   data-tab="sources">SOURCES</div>
   </div>
 </header>
 
-<div class="feed" id="flock-feed"></div>
+<div class="feed" id="feed"></div>
 
 <div class="bottom">
   <span id="last-update">Waiting...</span>
   <button class="ssh-btn" id="ssh-btn">SSH MODE</button>
-  <span style="color:#dc143c;font-weight:700;letter-spacing:2px">DOOKU</span>
+  <span class="brand">DOOKU</span>
 </div>
 
 <script>
-  const pulse      = document.getElementById("pulse");
-  const lastUpdate = document.getElementById("last-update");
-  const flockFeed  = document.getElementById("flock-feed");
+  // ── STATE ─────────────────────────────────────────────────
+
+  let devices      = [];
+  let sources      = [];
+  let sysStatus    = null;
+  let gpsData      = null;
+  let activeTab    = "networks";
+  let activeBand   = "all";
+  let activeEnc    = "all";
+  let activeSort   = "rssi";
+  let kismetOnline = false;
+
+  const sessionStart = Date.now() / 1000;
+
+  const $  = id => document.getElementById(id);
+  const pulse      = $("pulse");
+  const feed       = $("feed");
+  const lastUpdate = $("last-update");
+  const gpsPill    = $("gps-pill");
 
 
-  // ── KISMET LINK ──
-  document.getElementById("kismet-btn").addEventListener("click", () => {
-    window.open("http://10.10.10.1:2501", "_blank");
-  });
+  // ── HELPERS ───────────────────────────────────────────────
+
+  function getBand(freq) {
+    if (!freq || freq === 0) return null;
+    if (freq >= 2400 && freq < 2500) return "2.4";
+    if (freq >= 5150 && freq < 5900) return "5";
+    if (freq >= 5925)                return "6";
+    return null;
+  }
+
+  function rssiHTML(rssi) {
+    if (rssi == null || rssi === 0) return `<div class="rssi-wrap"><span class="rssi-val" style="color:var(--muted2)">—</span></div>`;
+    const pct   = Math.max(4, Math.min(100, ((rssi + 90) / 60) * 100));
+    const color = pct > 66 ? "var(--sig-good)" : pct > 33 ? "var(--sig-mid)" : "var(--sig-bad)";
+    return `
+      <div class="rssi-wrap">
+        <span class="rssi-val" style="color:${color}">${rssi}</span>
+        <div class="sig-bar"><div class="sig-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>`;
+  }
+
+  function encBadge(enc) {
+    if (!enc || enc === 0) return "";
+    const s = String(enc).toUpperCase();
+    if (s.includes("WPA3"))                         return '<span class="badge wpa3">WPA3</span>';
+    if (s.includes("WPA2"))                         return '<span class="badge wpa2">WPA2</span>';
+    if (s.includes("WPA"))                          return '<span class="badge wpa">WPA</span>';
+    if (s.includes("WEP"))                          return '<span class="badge wep">WEP</span>';
+    if (s === "OPEN" || s === "NONE" || s === "OPN" || s.includes("OPEN"))
+                                                    return '<span class="badge open">OPEN</span>';
+    return "";
+  }
+
+  function isNew(d)    { return d.first_seen && d.first_seen > sessionStart - 300; }
+  function hasGps(d)   { return d.geopoint && Array.isArray(d.geopoint) && (d.geopoint[0] !== 0 || d.geopoint[1] !== 0); }
+  function isAP(d)     { return String(d.type || "").includes("AP"); }
+  function isClient(d) { return String(d.type || "").toLowerCase().includes("client"); }
+  function isBLE(d)    { const t = String(d.type || "").toUpperCase(); return t === "BTLE" || t.includes("BLUETOOTH"); }
+
+  function bandMatch(d) {
+    if (activeBand === "all") return true;
+    return getBand(d.frequency) === activeBand;
+  }
+
+  function encMatch(d) {
+    if (activeEnc === "all") return true;
+    const s = String(d.encryption || "").toUpperCase();
+    if (activeEnc === "open") return !s.includes("WPA") && !s.includes("WEP");
+    if (activeEnc === "wpa2") return s.includes("WPA2") && !s.includes("WPA3");
+    if (activeEnc === "wpa3") return s.includes("WPA3");
+    return true;
+  }
+
+  function sorted(arr) {
+    return [...arr].sort((a, b) => {
+      if (activeSort === "rssi")    return (b.rssi    || -999) - (a.rssi    || -999);
+      if (activeSort === "name")    return (a.name    || "").localeCompare(b.name || "");
+      if (activeSort === "packets") return (b.packets || 0)   - (a.packets || 0);
+      if (activeSort === "first")   return (b.first_seen || 0) - (a.first_seen || 0);
+      return 0;
+    });
+  }
+
+  function fmtPkts(n) {
+    if (!n || n === 0) return "";
+    return n >= 1000 ? `${(n/1000).toFixed(1)}k pkts` : `${n} pkts`;
+  }
 
 
-  // ── FLOCK RENDER ──
-  function renderFlock(devices) {
-    document.getElementById("cnt-total").textContent = devices.length;
-    document.getElementById("cnt-wifi").textContent  = devices.filter(d => d.type === "wifi").length;
-    document.getElementById("cnt-ble").textContent   = devices.filter(d => d.type === "ble").length;
-    document.getElementById("cnt-pkts").textContent  = devices.reduce((s, d) => s + (d.frame_count || 0), 0);
+  // ── CARD RENDERERS ────────────────────────────────────────
 
-    if (!devices.length) {
-      flockFeed.innerHTML = `<div class="empty"><div class="icon">⚔️</div>Scanning... no Flock devices found yet.</div>`;
+  function apCard(d) {
+    const ssid    = (d.ssid && d.ssid !== 0) ? d.ssid : (d.name || "<hidden>");
+    const band    = getBand(d.frequency);
+    const bandStr = band ? `${band}GHz` : "";
+    const ch      = d.channel  || "?";
+    const vendor  = d.vendor   || "";
+    const clients = d.clients > 0 ? `${d.clients} cli · ` : "";
+    const pkts    = fmtPkts(d.packets);
+    const meta    = [ch !== "?" ? `ch ${ch}` : "", bandStr, clients + pkts].filter(Boolean).join(" · ");
+
+    return `
+      <div class="card ap">
+        <div class="card-top">
+          <div class="badges">
+            ${encBadge(d.encryption)}
+            ${isNew(d)  ? '<span class="badge b-new">NEW</span>' : ""}
+            ${hasGps(d) ? '<span class="badge b-gps">GPS</span>' : ""}
+          </div>
+          ${rssiHTML(d.rssi)}
+        </div>
+        <div class="device-name">${ssid}</div>
+        <div class="device-sub">${d.mac || ""}${vendor ? " · " + vendor : ""}</div>
+        ${meta ? `<div class="device-meta">${meta}</div>` : ""}
+      </div>`;
+  }
+
+  function clientCard(d) {
+    const name   = d.name || d.mac || "—";
+    const sub    = d.name && d.mac ? d.mac : "";
+    const vendor = d.vendor || "";
+    const band   = getBand(d.frequency);
+    const ch     = d.channel || "?";
+    const meta   = [ch !== "?" ? `ch ${ch}` : "", band ? `${band}GHz` : "", fmtPkts(d.packets)].filter(Boolean).join(" · ");
+
+    return `
+      <div class="card client">
+        <div class="card-top">
+          <div class="badges">
+            <span class="badge b-cl">CLIENT</span>
+            ${isNew(d) ? '<span class="badge b-new">NEW</span>' : ""}
+          </div>
+          ${rssiHTML(d.rssi)}
+        </div>
+        <div class="device-name">${name}</div>
+        <div class="device-sub">${sub}${vendor ? (sub ? " · " : "") + vendor : ""}</div>
+        ${meta ? `<div class="device-meta">${meta}</div>` : ""}
+      </div>`;
+  }
+
+  function bleCard(d) {
+    const name   = d.name   || "<unknown>";
+    const vendor = d.vendor || "";
+    const pkts   = fmtPkts(d.packets);
+    const sub    = String(d.type || "").toUpperCase();
+
+    return `
+      <div class="card ble">
+        <div class="card-top">
+          <div class="badges">
+            <span class="badge b-ble">${sub || "BLE"}</span>
+            ${isNew(d) ? '<span class="badge b-new">NEW</span>' : ""}
+          </div>
+          ${rssiHTML(d.rssi)}
+        </div>
+        <div class="device-name">${name}</div>
+        <div class="device-sub">${d.mac || ""}${vendor ? " · " + vendor : ""}</div>
+        ${pkts ? `<div class="device-meta">${pkts}</div>` : ""}
+      </div>`;
+  }
+
+  function sourceCard(s) {
+    const name    = s["kismet.datasource.name"]      || "Unknown";
+    const iface   = s["kismet.datasource.interface"] || "?";
+    const running = s["kismet.datasource.running"]   === true;
+    const error   = s["kismet.datasource.error"]     === true;
+    const ch      = s["kismet.datasource.channel"]   || "—";
+    const numSrc  = s["kismet.datasource.num_packets"];
+
+    const cls  = error ? "src-err" : running ? "src-ok" : "src-stopped";
+    const txt  = error ? "ERROR"   : running ? "RUNNING" : "STOPPED";
+    const pkts = numSrc > 0 ? ` · ${numSrc.toLocaleString()} pkts` : "";
+
+    return `
+      <div class="card source">
+        <div class="card-top">
+          <div class="source-name">${name} <span class="source-iface">${iface}</span></div>
+          <span class="badge ${cls}">${txt}</span>
+        </div>
+        <div class="device-meta">ch ${ch}${pkts}</div>
+      </div>`;
+  }
+
+
+  // ── RENDER ────────────────────────────────────────────────
+
+  function render() {
+    if (!kismetOnline) {
+      feed.innerHTML = `<div class="offline-banner">KISMET OFFLINE — start Kismet to begin capture</div>`;
       return;
     }
 
-    flockFeed.innerHTML = [...devices].reverse().map(d => {
-      const type  = d.type === "ble" ? "ble" : "wifi";
-      const name  = d.ssid || d.local_name || "<hidden>";
-      const rssi  = d.rssi != null ? `${d.rssi} dBm` : "—";
-      const mac   = d.mac  ?? "—";
-      const time  = d.time_stamp ?? "—";
+    if (activeTab === "sources") {
+      feed.innerHTML = sources.length
+        ? sources.map(sourceCard).join("")
+        : `<div class="empty"><div class="empty-icon">⚙</div>No sources reported</div>`;
+      return;
+    }
 
-      const extras = type === "wifi"
-        ? `<span><b>ch</b> ${d.channel ?? "—"}</span><span><b>enc</b> ${d.encryption ?? "—"}</span>`
-        : `<span><b>uuid</b> ${d.uuids ? "yes" : "no"}</span>`;
+    let list = devices;
+    if      (activeTab === "networks") list = list.filter(isAP);
+    else if (activeTab === "clients")  list = list.filter(isClient);
+    else if (activeTab === "ble")      list = list.filter(isBLE);
 
-      const frames = d.frame_count || 0;
-      const hot    = frames >= 10;
-      const pktBadge = frames > 0 ? `<span class="frames ${hot ? "hot" : ""}">${frames} pkts</span>` : "";
+    if (activeTab === "networks" || activeTab === "clients") list = list.filter(bandMatch);
+    if (activeTab === "networks") list = list.filter(encMatch);
 
-      return `
-        <div class="card ${type}">
-          <div class="card-top">
-            <span class="badge ${type}">${type.toUpperCase()}</span>
-            <span class="rssi">${rssi}</span>
-          </div>
-          <div class="name">${name}</div>
-          <div class="mac">${mac}</div>
-          <div class="meta">${extras}${pktBadge}<span>${time}</span></div>
-        </div>`;
-    }).join("");
+    list = sorted(list);
+
+    if (!list.length) {
+      feed.innerHTML = `<div class="empty"><div class="empty-icon">⚔</div>No devices match filters</div>`;
+      return;
+    }
+
+    let html = "";
+    if      (activeTab === "networks") html = list.map(apCard).join("");
+    else if (activeTab === "clients")  html = list.map(clientCard).join("");
+    else if (activeTab === "ble")      html = list.map(bleCard).join("");
+
+    feed.innerHTML = html;
   }
 
 
-  // ── POLL FLOCK ──
-  async function pollFlock() {
-    try {
-      const res  = await fetch("/data");
-      const data = await res.json();
-      renderFlock(data);
-      pulse.className    = "pulse live";
-      lastUpdate.textContent = `Updated ${new Date().toLocaleTimeString()}`;
-    } catch {
-      pulse.className    = "pulse";
-      lastUpdate.textContent = "Connection lost";
+  // ── STATS ─────────────────────────────────────────────────
+
+  function updateStats() {
+    const aps     = devices.filter(isAP).length;
+    const clients = devices.filter(isClient).length;
+    const ble     = devices.filter(isBLE).length;
+    const newCnt  = devices.filter(isNew).length;
+
+    $("s-total").textContent  = devices.length;
+    $("s-ap").textContent     = aps;
+    $("s-client").textContent = clients;
+    $("s-ble").textContent    = ble;
+    $("s-new").textContent    = newCnt;
+
+    if (sysStatus) {
+      const rate = sysStatus["kismet.system.packets.packetrate"]
+                ?? sysStatus["kismet.system.packets.rate"];
+      $("s-pkts").textContent = rate != null ? Math.round(rate) : "—";
+    }
+
+    if (gpsData) {
+      const fix = gpsData["kismet.common.location.fix"];
+      if (fix >= 2) {
+        gpsPill.className   = "gps-pill fix";
+        gpsPill.textContent = "GPS FIX";
+      } else {
+        gpsPill.className   = "gps-pill";
+        gpsPill.textContent = "GPS";
+      }
     }
   }
 
 
-  // ── SSH ──
-  document.getElementById("ssh-btn").addEventListener("click", async () => {
+  // ── POLLING ───────────────────────────────────────────────
+
+  async function pollDevices() {
+    try {
+      const res  = await fetch("/kismet/devices");
+      const data = await res.json();
+
+      if (res.ok && Array.isArray(data)) {
+        devices      = data;
+        kismetOnline = true;
+        pulse.className        = "pulse live";
+        lastUpdate.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        updateStats();
+        render();
+      } else {
+        throw new Error(data.error || "bad response");
+      }
+    } catch {
+      kismetOnline           = false;
+      pulse.className        = "pulse";
+      lastUpdate.textContent = "Kismet offline";
+      render();
+    }
+  }
+
+  async function pollStatus() {
+    try {
+      const res  = await fetch("/kismet/status");
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        sysStatus = data.status  || null;
+        sources   = data.sources || [];
+        gpsData   = data.gps     || null;
+        updateStats();
+        if (activeTab === "sources") render();
+      }
+    } catch {}
+  }
+
+
+  // ── EVENT HANDLERS ────────────────────────────────────────
+
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      activeTab = tab.dataset.tab;
+
+      const showFilter  = activeTab === "networks" || activeTab === "clients";
+      const showEncRow  = activeTab === "networks";
+      $("filter-bar").style.display = showFilter ? "" : "none";
+      $("enc-row").style.display    = showEncRow  ? "" : "none";
+
+      render();
+    });
+  });
+
+  document.querySelectorAll(".pill[data-band]").forEach(p => {
+    p.addEventListener("click", () => {
+      document.querySelectorAll(".pill[data-band]").forEach(x => x.classList.remove("active"));
+      p.classList.add("active");
+      activeBand = p.dataset.band;
+      render();
+    });
+  });
+
+  document.querySelectorAll(".pill[data-enc]").forEach(p => {
+    p.addEventListener("click", () => {
+      document.querySelectorAll(".pill[data-enc]").forEach(x => x.classList.remove("active"));
+      p.classList.add("active");
+      activeEnc = p.dataset.enc;
+      render();
+    });
+  });
+
+  $("sort-select").addEventListener("change", e => {
+    activeSort = e.target.value;
+    render();
+  });
+
+  $("ssh-btn").addEventListener("click", async () => {
     if (!confirm("Drop AP and switch to SSH mode?")) return;
     await fetch("/ssh-mode");
   });
 
 
-  // ── START ──
-  pollFlock();
-  setInterval(pollFlock, 2000);
+  // ── START ─────────────────────────────────────────────────
+
+  pollDevices();
+  pollStatus();
+  setInterval(pollDevices, 2000);
+  setInterval(pollStatus,  5000);
 </script>
 </body>
 </html>
