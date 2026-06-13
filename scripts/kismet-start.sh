@@ -12,13 +12,16 @@ echo "[+] Setting monitor mode..."
 for iface in "${ADAPTERS[@]}"; do
     if ip link show "$iface" &>/dev/null; then
         ip link set "$iface" down
+        sleep 0.5
         iw dev "$iface" set type monitor
+        sleep 0.5
         ip link set "$iface" up
         echo "    $iface -> monitor"
     else
         echo "    $iface not found, skipping"
     fi
 done
+sleep 2
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_PYTHON="$SCRIPT_DIR/venv/bin/python"

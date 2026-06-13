@@ -18,6 +18,11 @@ if pgrep -x kismet_cap_linux_wifi &>/dev/null; then
     kill -9 $(pgrep -x kismet_cap_linux_wifi) 2>/dev/null
 fi
 
+# clean up any leftover monitor VIFs (e.g. wlan1mon) from bad shutdowns
+for mon in $(iw dev 2>/dev/null | grep Interface | awk '{print $2}' | grep mon); do
+    iw dev "$mon" del 2>/dev/null && echo "[+] Removed leftover $mon"
+done
+
 if pgrep -x kismet &>/dev/null; then
     echo "[+] Killing Kismet process..."
     kill -9 $(pgrep -x kismet) 2>/dev/null
