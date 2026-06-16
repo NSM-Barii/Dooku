@@ -49,6 +49,12 @@ def start():
 
     console.print("[bold green][+] AP live — SSID: Dooku @ 10.10.10.1[/bold green]")
 
+    # launch dashboard so it's always up when the AP is up
+    venv_python = str(Path(__file__).parent / "venv" / "bin" / "python")
+    server      = str(BASE / "gui" / "server.py")
+    subprocess.Popen([venv_python, server], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    console.print("[bold green][+] Dashboard live — http://10.10.10.1:5000[/bold green]")
+
     # keep process alive so systemd doesn't restart it
     while True:
         time.sleep(60)

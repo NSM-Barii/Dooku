@@ -551,6 +551,42 @@
       color: var(--wifi);
       white-space: nowrap;
     }
+
+    .action-btn {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1px solid #333;
+      background: #111;
+      color: var(--muted2);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .action-btn.wardrive {
+      border-color: rgba(220,20,60,0.4);
+      color: var(--wifi);
+      background: rgba(220,20,60,0.08);
+    }
+    .action-btn.shutdown { color: #444; }
+    .action-btn:active { opacity: 0.6; }
+
+    .expand-bar {
+      text-align: center;
+      padding: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--muted2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .expand-bar:active { opacity: 0.6; }
   </style>
 </head>
 <body>
@@ -624,7 +660,9 @@
 <div class="bottom">
   <span id="last-update">Waiting...</span>
   <button class="obfuscate-btn" id="obfuscate-btn">Hide Info</button>
-  <span class="brand">DOOKU</span>
+  <button class="action-btn wardrive" id="wardrive-btn">WARDRIVE</button>
+  <button class="action-btn" id="wigle-btn">WIGLE</button>
+  <button class="action-btn shutdown" id="shutdown-btn">⏻</button>
 </div>
 
 <script>
@@ -640,6 +678,8 @@
   let activeSort   = "rssi";
   let kismetOnline = false;
   let obfuscated   = false;
+  let showAll      = false;
+  const PAGE_SIZE  = 100;
 
   const deviceMap  = {};  // mac -> full device object for sheet lookup
 
@@ -686,9 +726,10 @@
 
   function getBand(freq) {
     if (!freq || freq === 0) return null;
-    if (freq >= 2400 && freq < 2500) return "2.4";
-    if (freq >= 5150 && freq < 5900) return "5";
-    if (freq >= 5925)                return "6";
+    const mhz = freq > 100000 ? freq / 1000 : freq; // Kismet sends kHz
+    if (mhz >= 2400 && mhz < 2500) return "2.4";
+    if (mhz >= 5150 && mhz < 5900) return "5";
+    if (mhz >= 5925)                return "6";
     return null;
   }
 
@@ -877,10 +918,19 @@
       return;
     }
 
+    const total   = list.length;
+    const visible = showAll ? list : list.slice(0, PAGE_SIZE);
+
     let html = "";
-    if      (activeTab === "networks") html = list.map(apCard).join("");
-    else if (activeTab === "clients")  html = list.map(clientCard).join("");
-    else if (activeTab === "ble")      html = list.map(bleCard).join("");
+    if      (activeTab === "networks") html = visible.map(apCard).join("");
+    else if (activeTab === "clients")  html = visible.map(clientCard).join("");
+    else if (activeTab === "ble")      html = visible.map(bleCard).join("");
+
+    if (total > PAGE_SIZE) {
+      html += showAll
+        ? `<div class="expand-bar" onclick="toggleShow()">▲ Show less</div>`
+        : `<div class="expand-bar" onclick="toggleShow()">▼ Show all ${total.toLocaleString()}</div>`;
+    }
 
     feed.innerHTML = html;
   }
@@ -888,17 +938,21 @@
 
   // ── STATS ─────────────────────────────────────────────────
 
-  function updateStats() {
-    const aps     = devices.filter(isAP).length;
-    const clients = devices.filter(isClient).length;
-    const ble     = devices.filter(isBLE).length;
-    const newCnt  = devices.filter(isNew).length;
+  function updateStats(counts) {
+    const newCnt = devices.filter(isNew).length;
 
-    $("s-total").textContent  = devices.length;
-    $("s-ap").textContent     = aps;
-    $("s-client").textContent = clients;
-    $("s-ble").textContent    = ble;
-    $("s-new").textContent    = newCnt;
+    if (counts) {
+      $("s-total").textContent  = counts.total   || 0;
+      $("s-ap").textContent     = counts.aps     || 0;
+      $("s-client").textContent = counts.clients || 0;
+      $("s-ble").textContent    = counts.ble     || 0;
+    } else {
+      $("s-total").textContent  = devices.length;
+      $("s-ap").textContent     = devices.filter(isAP).length;
+      $("s-client").textContent = devices.filter(isClient).length;
+      $("s-ble").textContent    = devices.filter(isBLE).length;
+    }
+    $("s-new").textContent = newCnt;
 
     if (sources.length) {
       const totalRate = sources.reduce((sum, s) => {
@@ -955,7 +1009,7 @@
         lastPollTime = now;
         kismetOnline = true;
         pulse.className        = "pulse live";
-        lastUpdate.textContent = `${devices.length} devices · ${new Date().toLocaleTimeString()}`;
+        lastUpdate.textContent = `${devices.length} loaded · ${new Date().toLocaleTimeString()}`;
         updateStats();
         render();
       } else {
@@ -977,7 +1031,7 @@
         sysStatus = data.status  || null;
         sources   = data.sources || [];
         gpsData   = data.gps     || null;
-        updateStats();
+        updateStats(data.counts || null);
         if (activeTab === "sources") render();
       }
     } catch {}
@@ -1192,6 +1246,39 @@
   pollStatus();
   setInterval(pollDevices, 2000);
   setInterval(pollStatus,  5000);
+
+  function toggleShow() {
+    showAll = !showAll;
+    render();
+    if (!showAll) window.scrollTo(0, 0);
+  }
+
+  $("wardrive-btn").addEventListener("click", async () => {
+    const btn = $("wardrive-btn");
+    btn.textContent = "STARTING...";
+    btn.style.opacity = "0.5";
+    await fetch("/wardrive");
+    setTimeout(() => { btn.textContent = "WARDRIVE"; btn.style.opacity = ""; }, 3000);
+  });
+
+  $("wigle-btn").addEventListener("click", async () => {
+    const btn = $("wigle-btn");
+    btn.textContent = "UPLOADING...";
+    btn.style.opacity = "0.5";
+    try {
+      const res  = await fetch("/wigle-upload");
+      const data = await res.json();
+      if (data.error) alert("WiGLE: " + data.error);
+      else alert("WiGLE upload OK — " + (data.file || ""));
+    } catch { alert("WiGLE upload failed"); }
+    btn.textContent = "WIGLE";
+    btn.style.opacity = "";
+  });
+
+  $("shutdown-btn").addEventListener("click", async () => {
+    if (!confirm("Shut down the Pi?")) return;
+    await fetch("/shutdown");
+  });
 </script>
 </body>
 </html>

@@ -47,6 +47,9 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/kismet/status":           self._serve_kismet_status()
         elif self.path.startswith("/kismet/device/"): self._serve_device_detail()
         elif self.path == "/ssh-mode":                self._ssh_mode()
+        elif self.path == "/wardrive":               self._wardrive()
+        elif self.path == "/shutdown":               self._shutdown()
+        elif self.path == "/wigle-upload":           self._wigle_upload()
         else:
             self.send_response(404)
             self.end_headers()
@@ -132,10 +135,10 @@ class Handler(BaseHTTPRequestHandler):
                 # delta — only devices updated since last poll
                 devices = self._kpost(f"/devices/last-time/{since}/devices.json", body)
             else:
-                # initial load — 500 most recently seen
+                # initial load — 2000 most recently seen
                 devices = self._kpost("/devices/views/all/devices.json", body)
                 devices.sort(key=lambda d: d.get("last_seen", 0), reverse=True)
-                devices = devices[:500]
+                devices = devices[:2000]
             self._json(devices)
         except urllib.error.URLError:
             self._json({"error": "Kismet not running"}, 503)
@@ -164,7 +167,21 @@ class Handler(BaseHTTPRequestHandler):
             sources = self._kget("/datasource/all_sources.json")
             try:    gps = self._kget("/gps/location.json")
             except: gps = None
-            self._json({"status": status, "sources": sources, "gps": gps})
+
+            # accurate device type counts from full Kismet database
+            try:
+                types = self._kpost("/devices/views/all/devices.json",
+                                    json.dumps({"fields": [["kismet.device.base.type", "type"]]}).encode())
+                counts = {"total": len(types), "aps": 0, "clients": 0, "ble": 0}
+                for d in types:
+                    t = str(d.get("type", "")).lower()
+                    if "ap"        in t: counts["aps"]     += 1
+                    elif "client"  in t: counts["clients"] += 1
+                    elif "bt" in t or "ble" in t or "bluetooth" in t: counts["ble"] += 1
+            except:
+                counts = None
+
+            self._json({"status": status, "sources": sources, "gps": gps, "counts": counts})
         except urllib.error.URLError:
             self._json({"error": "Kismet not running"}, 503)
         except Exception as e:
@@ -201,6 +218,64 @@ class Handler(BaseHTTPRequestHandler):
             self.server.shutdown()
 
         threading.Thread(target=teardown, daemon=True).start()
+
+    def _wigle_upload(self):
+        import glob, mimetypes
+        sessions = sorted(
+            glob.glob(str(BASE.parent / "kismet" / "sessions" / "*.wiglecsv")),
+            key=lambda f: Path(f).stat().st_mtime, reverse=True
+        )
+        if not sessions:
+            self._json({"error": "No WiGLE CSV files found"}, 404); return
+
+        creds_file = BASE.parent / "config" / "wigle.json"
+        if not creds_file.exists():
+            self._json({"error": "No WiGLE credentials — add config/wigle.json"}, 401); return
+
+        creds = json.loads(creds_file.read_text())
+        api_name  = creds.get("api_name", "")
+        api_token = creds.get("api_token", "")
+        if not api_name or not api_token:
+            self._json({"error": "wigle.json missing api_name or api_token"}, 401); return
+
+        csv_path = sessions[0]
+        token    = base64.b64encode(f"{api_name}:{api_token}".encode()).decode()
+
+        try:
+            import urllib.request
+            boundary = "----DookuBoundary"
+            with open(csv_path, "rb") as f: csv_data = f.read()
+            filename = Path(csv_path).name
+            body = (
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\n"
+                f"Content-Type: text/csv\r\n\r\n"
+            ).encode() + csv_data + f"\r\n--{boundary}--\r\n".encode()
+
+            req = urllib.request.Request(
+                "https://api.wigle.net/api/v2/file/upload",
+                data=body,
+                headers={
+                    "Authorization": f"Basic {token}",
+                    "Content-Type": f"multipart/form-data; boundary={boundary}",
+                }
+            )
+            with urllib.request.urlopen(req, timeout=30) as r:
+                result = json.loads(r.read())
+            self._json({"status": "ok", "file": filename, "wigle": result})
+        except Exception as e:
+            self._json({"error": str(e)}, 500)
+
+    def _wardrive(self):
+        self._json({"status": "starting"})
+        script = str(BASE.parent / "scripts" / "kismet-start.sh")
+        threading.Thread(target=lambda: subprocess.run(["bash", script]), daemon=True).start()
+
+    def _shutdown(self):
+        self._json({"status": "shutdown"})
+        def do_shutdown():
+            import time; time.sleep(1)
+            subprocess.run(["shutdown", "-h", "now"])
+        threading.Thread(target=do_shutdown, daemon=True).start()
 
     def log_message(self, format, *args): pass
 

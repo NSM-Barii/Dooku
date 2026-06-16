@@ -19,7 +19,7 @@
 
 > **"I have become more powerful than any Jedi."** — Count Dooku
 
-Portable RF collection rig built inside a hardened case. Raspberry Pi 5 running Kali Linux, multiple WiFi adapters for passive wardriving, RTL-SDR for sub-GHz RF collection, and a u-blox GPS for location tagging. Powered by [flock-back](https://github.com/nsm-barii/flock-back) for WiFi probe request sniffing and BLE wardriving.
+Portable RF collection rig built inside a hardened case. Raspberry Pi 5 running Kali Linux, 4× WiFi adapters for passive wardriving, a USB Bluetooth adapter for BLE scanning, and a u-blox GPS for location tagging. Powered by Kismet for WiFi + BLE capture, with a custom web dashboard for live monitoring and one-tap WiGLE uploads.
 
 ---
 
@@ -36,29 +36,28 @@ SSID:     Dooku
 Password: wardriving123
 ```
 
-**3. SSH in**
+**3. Open the dashboard**
 
-```bash
-ssh kali@10.10.10.1
-```
+Navigate to `http://10.10.10.1:5000` from any device connected to Dooku. No SSH needed.
 
 **4. Start wardriving**
 
-```bash
-# Kismet — passive WiFi + GPS logging
-sudo kismet --no-ncurses
+Hit the **WARDRIVE** button in the dashboard. Sets all 4 WiFi adapters to monitor mode, adds the BLE adapter as a Kismet source, and launches Kismet automatically.
 
-# flock-back — WiFi probe + BLE wardriving
-cd /home/kali/Documents/nsm_tools/flock-back/src
-venv/bin/python main.py -w -k -p
-```
+**5. Upload to WiGLE**
 
-**5. Open the web UI from your phone or laptop**
+Hit the **WIGLE** button to push the most recent session's CSV directly to WiGLE. Requires `config/wigle.json` with your API credentials (see below).
+
+**6. Shut down cleanly**
+
+Hit the **⏻** button in the dashboard. Never yank the power.
+
+**7. Open the Kismet web UI (optional)**
 
 | Tool | URL |
 |---|---|
+| Dooku Dashboard | `http://10.10.10.1:5000` |
 | Kismet | `http://10.10.10.1:2501` — login: `kismet` / `dooku` |
-| flock-back | `http://10.10.10.1:8000` |
 
 ---
 
@@ -67,7 +66,8 @@ venv/bin/python main.py -w -k -p
 | Item | Detail |
 |---|---|
 | Raspberry Pi 5 | 8GB RAM, 128GB storage |
-| ALFA AWUS036ACS | RTL8821AU, AC600 — ×4 |
+| ALFA AWUS036ACS | RTL8821AU, AC600 — ×4 (monitor mode, 2.4/5GHz) |
+| USB Bluetooth Adapter | Realtek BT 5.4 — BLE scanning via Kismet |
 | VFAN USB GPS GMouse | u-blox 7, magnetic base |
 | Nooelec NESDR SMArt v5 | RTL-SDR, sub-GHz/IoT RF |
 | IVETTO 7-Port USB 3.0 Hub | External powered |
@@ -92,9 +92,27 @@ Installs all dependencies, drivers, configures services and GPS, deploys Kismet 
 
 | Service | What it does | Auto-start |
 |---|---|---|
-| `dooku` | Brings up the AP | Yes |
-| `flock-back` | flock-back wardriving suite | No — enable with `systemctl enable flock-back` |
+| `dooku` | Brings up the AP + dashboard | Yes |
 | `gpsd` | GPS daemon | Yes |
+
+Kismet and flock-back are started manually via the **WARDRIVE** button on the dashboard, or via `sudo bash scripts/kismet-start.sh`.
+
+---
+
+## WiGLE Upload
+
+Add your WiGLE API credentials to `config/wigle.json`:
+
+```json
+{
+  "api_name": "your_wigle_api_name",
+  "api_token": "your_wigle_api_token"
+}
+```
+
+Then hit the **WIGLE** button on the dashboard to upload the most recent session automatically.
+
+Kismet saves `.kismet` and `.wiglecsv` files to `kismet/sessions/`.
 
 ---
 
@@ -104,8 +122,6 @@ Kismet saves `.kismet` and WigleCSV files to:
 ```
 kismet/sessions/
 ```
-
-Upload the WigleCSV to [wigle.net](https://wigle.net) after a session.
 
 ---
 
