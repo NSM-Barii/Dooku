@@ -23,7 +23,7 @@ DEVICE_FIELDS = [
     ["kismet.device.base.manuf",                                                                  "vendor"     ],
     ["kismet.device.base.last_time",                                                              "last_seen"  ],
     ["kismet.device.base.first_time",                                                             "first_seen" ],
-    ["kismet.device.base.packets/kismet.device.base.packets.total",                              "packets"    ],
+    ["kismet.device.base.packets.total",                                                          "packets"    ],
     ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ssid",            "ssid"       ],
     ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.crypt_string",    "encryption" ],
     ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ht_mode",         "ht_mode"    ],
@@ -43,6 +43,7 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path.startswith("/kismet/devices"): self._serve_kismet_devices()
         elif self.path == "/kismet/status":           self._serve_kismet_status()
         elif self.path.startswith("/kismet/device/"): self._serve_device_detail()
+        elif self.path == "/kismet/flock":            self._serve_flock()
         elif self.path == "/ssh-mode":                self._ssh_mode()
         elif self.path == "/wardrive":                self._wardrive()
         elif self.path == "/shutdown":                self._shutdown()
@@ -142,27 +143,52 @@ class Handler(BaseHTTPRequestHandler):
             try:    gps = self._kget("/gps/location.json")
             except: gps = None
 
+            # use system status for total — avoids pulling all devices just to count
+            total = status.get("kismet.system.devices.count", 0)
+
+            # type breakdown — type field only, very fast even with 10k+ devices
             try:
-                from flock import tag_devices
-                types  = self._kpost("/devices/views/all/devices.json",
-                                     json.dumps({"fields": [
-                                         ["kismet.device.base.type",    "type"],
-                                         ["kismet.device.base.macaddr", "mac" ],
-                                         ["kismet.device.base.name",    "name"],
-                                         ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ssid", "ssid"],
-                                         ["dot11.device/dot11.device.probed_ssid_map", "probed_ssids"],
-                                     ]}).encode())
-                counts = {"total": len(types), "aps": 0, "clients": 0, "ble": 0, "flock": 0}
-                _, counts["flock"] = tag_devices(types)
+                types   = self._kpost("/devices/views/all/devices.json",
+                                      json.dumps({"fields": [["kismet.device.base.type", "type"]]}).encode())
+                counts  = {"total": total, "aps": 0, "clients": 0, "ble": 0, "flock": 0}
                 for d in types:
                     t = str(d.get("type", "")).lower()
-                    if   "ap"      in t:                               counts["aps"]     += 1
-                    elif "client"  in t:                               counts["clients"] += 1
+                    if   "ap"     in t:                                counts["aps"]     += 1
+                    elif "client" in t:                                counts["clients"] += 1
                     elif "bt" in t or "ble" in t or "bluetooth" in t: counts["ble"]     += 1
             except:
-                counts = None
+                counts = {"total": total, "aps": 0, "clients": 0, "ble": 0, "flock": 0}
+
+            # flock count — separate query so a timeout here doesn't kill the rest
+            try:
+                from flock import tag_devices
+                flock_types = self._kpost("/devices/views/all/devices.json",
+                                          json.dumps({"fields": [
+                                              ["kismet.device.base.macaddr", "mac"],
+                                              ["kismet.device.base.name",    "name"],
+                                              ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ssid", "ssid"],
+                                              ["dot11.device/dot11.device.probed_ssid_map", "probed_ssids"],
+                                          ]}).encode())
+                _, counts["flock"] = tag_devices(flock_types)
+            except:
+                pass
 
             self._json({"status": status, "sources": sources, "gps": gps, "counts": counts})
+        except urllib.error.URLError:
+            self._json({"error": "Kismet not running"}, 503)
+        except Exception as e:
+            self._json({"error": str(e)}, 503)
+
+    def _serve_flock(self):
+        """Always returns all flock cameras from the full Kismet DB — no time filter."""
+        try:
+            from flock import tag_devices
+            body    = json.dumps({"fields": DEVICE_FIELDS + [
+                ["dot11.device/dot11.device.probed_ssid_map", "probed_ssids"]
+            ]}).encode()
+            devices = self._kpost("/devices/views/all/devices.json", body)
+            devices, _ = tag_devices(devices)
+            self._json([d for d in devices if d.get("flock")])
         except urllib.error.URLError:
             self._json({"error": "Kismet not running"}, 503)
         except Exception as e:

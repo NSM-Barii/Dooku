@@ -1224,6 +1224,19 @@
     } catch {}
   }
 
+  async function pollFlock() {
+    if (activeTab !== "flock") return;
+    try {
+      const res  = await fetch("/kismet/flock");
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) {
+        data.forEach(d => { if (d.mac) deviceMap[d.mac] = d; });
+        devices = Object.values(deviceMap);
+        render();
+      }
+    } catch {}
+  }
+
 
   // ── EVENT HANDLERS ────────────────────────────────────────
   document.querySelectorAll(".tab").forEach(tab => {
@@ -1240,6 +1253,7 @@
       if (!showFlock) { activeFlockFilter = "all"; document.querySelectorAll(".pill[data-flock]").forEach(x => x.classList.toggle("active", x.dataset.flock === "all")); }
       showAll = false;
       render();
+      if (activeTab === "flock") pollFlock();
     });
   });
 
@@ -1478,8 +1492,10 @@
   // ── START ─────────────────────────────────────────────────
   pollDevices();
   pollStatus();
+  pollFlock();
   setInterval(pollDevices, 3000);
   setInterval(pollStatus,  3000);
+  setInterval(pollFlock,   5000);
 </script>
 </body>
 </html>
