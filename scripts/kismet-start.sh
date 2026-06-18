@@ -23,6 +23,18 @@ for iface in "${ADAPTERS[@]}"; do
 done
 sleep 2
 
+# release hci1 from BlueZ before Kismet takes it — prevents crash from dual ownership
+# hci0 (built-in) is intentionally left alone — shares antenna with wlan0
+if hciconfig hci1 &>/dev/null 2>&1; then
+    echo "[+] Releasing hci1 from BlueZ..."
+    hciconfig hci1 down
+fi
+sleep 1
+
+# always deploy latest kismet config
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cp "$(dirname "$SCRIPT_DIR")/config/kismet_site.conf" /etc/kismet/kismet_site.conf
+
 echo "[+] Starting Kismet in tmux session 'kismet'..."
 tmux new-session -d -s kismet "kismet --no-ncurses" 2>/dev/null || \
     tmux send-keys -t kismet "" Enter

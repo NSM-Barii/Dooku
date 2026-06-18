@@ -20,6 +20,8 @@
       --client-bg:  #120a1a;
       --ble:        #4eaaff;
       --ble-bg:     #091a2e;
+      --flock:      #ff9500;
+      --flock-bg:   #1a0d00;
 
       --sig-good:   #00d26a;
       --sig-mid:    #ffd60a;
@@ -53,6 +55,7 @@
       align-items: center;
       padding: 14px 16px 0;
       margin-bottom: 12px;
+      position: relative;
     }
 
     .logo {
@@ -96,23 +99,14 @@
       border: 1px solid #222;
     }
 
-    .obfuscate-btn {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      padding: 3px 8px;
-      border-radius: 20px;
-      background: #111;
-      color: var(--muted2);
-      border: 1px solid #222;
-      cursor: pointer;
-      transition: all 0.2s;
+    .pulse {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+      flex-shrink: 0;
     }
-    .obfuscate-btn.on {
-      background: rgba(255,214,10,0.1);
-      color: var(--sig-mid);
-      border-color: rgba(255,214,10,0.4);
-    }
+    .pulse.live { background: var(--wifi); box-shadow: 0 0 8px var(--wifi); }
 
     .coords-bar {
       padding: 0 16px 8px;
@@ -123,15 +117,6 @@
       display: none;
     }
     .coords-bar.visible { display: block; }
-
-    .pulse {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-      transition: background 0.3s;
-      flex-shrink: 0;
-    }
-    .pulse.live { background: var(--wifi); box-shadow: 0 0 8px var(--wifi); }
 
     /* ── STATS ── */
     .stats {
@@ -153,6 +138,7 @@
       font-size: 20px;
       font-weight: 700;
       line-height: 1;
+      transition: opacity 0.2s;
     }
     .stat .lbl {
       font-size: 8px;
@@ -167,7 +153,7 @@
     .stat.s-client .val { color: var(--client); }
     .stat.s-ble    .val { color: var(--ble); }
     .stat.s-new    .val { color: var(--sig-mid); }
-    .stat.s-pkts   .val { color: var(--sig-bad); }
+    .stat.s-flock  .val { color: var(--flock); }
 
     /* ── FILTER BAR ── */
     .filter-bar {
@@ -241,10 +227,11 @@
       border-bottom: 2px solid transparent;
       transition: color 0.2s, border-color 0.2s;
     }
-    .tab.active       { color: var(--wifi);   border-color: var(--wifi);   }
-    .tab.active.t-cl  { color: var(--client); border-color: var(--client); }
-    .tab.active.t-ble { color: var(--ble);    border-color: var(--ble);    }
-    .tab.active.t-src { color: var(--muted2); border-color: var(--muted2); }
+    .tab.active         { color: var(--wifi);   border-color: var(--wifi);   }
+    .tab.active.t-cl    { color: var(--client); border-color: var(--client); }
+    .tab.active.t-ble   { color: var(--ble);    border-color: var(--ble);    }
+    .tab.active.t-flock { color: var(--flock);  border-color: var(--flock);  }
+    .tab.active.t-src   { color: var(--muted2); border-color: var(--muted2); }
 
     /* ── FEED ── */
     .feed {
@@ -253,6 +240,7 @@
       flex-direction: column;
       gap: 8px;
     }
+    .feed.hidden { display: none; }
 
     /* ── CARDS ── */
     .card {
@@ -271,6 +259,7 @@
     .card.ap     { border-left: 3px solid var(--wifi);   }
     .card.client { border-left: 3px solid var(--client); }
     .card.ble    { border-left: 3px solid var(--ble);    }
+    .card.flock  { border-left: 3px solid var(--flock); background: rgba(255,149,0,0.04); }
     .card.source { border-left: 3px solid #333;          }
 
     .card-top {
@@ -311,10 +300,7 @@
       overflow: hidden;
       flex-shrink: 0;
     }
-    .sig-fill {
-      height: 100%;
-      border-radius: 3px;
-    }
+    .sig-fill { height: 100%; border-radius: 3px; }
 
     /* ── DEVICE INFO ── */
     .device-name {
@@ -341,7 +327,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .device-meta b { color: #666; font-weight: 500; }
 
     /* ── BADGES ── */
     .badge {
@@ -355,32 +340,42 @@
       flex-shrink: 0;
     }
 
-    .badge.wpa3   { background: rgba(0,210,106,0.12);  color: #00d26a; }
-    .badge.wpa2   { background: rgba(78,170,255,0.12); color: #4eaaff; }
-    .badge.wpa    { background: rgba(255,214,10,0.12); color: #ffd60a; }
-    .badge.wep    { background: rgba(255,107,53,0.15); color: #ff6b35; }
-    .badge.open   { background: rgba(220,20,60,0.12);  color: #dc143c; }
-    .badge.b-new  { background: rgba(255,214,10,0.15); color: #ffd60a; }
-    .badge.b-gps  { background: rgba(0,210,106,0.12);  color: #00d26a; }
-    .badge.b-cl   { background: rgba(155,89,182,0.12); color: #9b59b6; }
-    .badge.b-ble  { background: rgba(78,170,255,0.12); color: #4eaaff; }
+    .badge.wpa3   { background: rgba(0,210,106,0.12);   color: #00d26a; }
+    .badge.wpa2   { background: rgba(78,170,255,0.12);  color: #4eaaff; }
+    .badge.wpa    { background: rgba(255,214,10,0.12);  color: #ffd60a; }
+    .badge.wep    { background: rgba(255,107,53,0.15);  color: #ff6b35; }
+    .badge.open   { background: rgba(220,20,60,0.12);   color: #dc143c; }
+    .badge.b-new  { background: rgba(255,214,10,0.15);  color: #ffd60a; }
+    .badge.b-gps  { background: rgba(0,210,106,0.12);   color: #00d26a; }
+    .badge.b-cl   { background: rgba(155,89,182,0.12);  color: #9b59b6; }
+    .badge.b-ble  { background: rgba(78,170,255,0.12);  color: #4eaaff; }
+    .badge.b-flock{ background: rgba(255,149,0,0.15);   color: #ff9500; }
 
     .src-ok      { background: rgba(0,210,106,0.12);  color: #00d26a; }
     .src-err     { background: rgba(220,20,60,0.12);  color: #dc143c; }
     .src-stopped { background: rgba(74,74,74,0.2);    color: #666;    }
 
-    /* ── SOURCES ── */
-    .source-name {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
+    /* ── FLOCK CAMERA CARD ── */
+    .flock-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
     }
-    .source-iface {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--muted2);
+    .flock-check {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 7px;
+      border-radius: 4px;
       font-family: monospace;
     }
+    .flock-check.hit  { background: rgba(0,210,106,0.12); color: #00d26a; }
+    .flock-check.miss { background: rgba(40,40,40,0.5);   color: #444; }
+
+    /* ── SOURCES ── */
+    .source-name  { font-size: 14px; font-weight: 700; color: var(--text); }
+    .source-iface { font-size: 11px; font-weight: 400; color: var(--muted2); font-family: monospace; }
 
     /* ── OFFLINE / EMPTY ── */
     .empty {
@@ -389,11 +384,7 @@
       font-size: 13px;
       padding: 60px 20px;
     }
-    .empty-icon {
-      font-size: 32px;
-      margin-bottom: 12px;
-      opacity: 0.4;
-    }
+    .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
 
     .offline-banner {
       margin: 12px;
@@ -444,28 +435,11 @@
       padding: 16px 18px 12px;
       border-bottom: 1px solid var(--border);
     }
-    .sheet-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-      word-break: break-all;
-    }
-    .sheet-sub {
-      font-size: 11px;
-      color: var(--muted2);
-      font-family: monospace;
-    }
-    .sheet-badges {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
+    .sheet-title  { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; word-break: break-all; }
+    .sheet-sub    { font-size: 11px; color: var(--muted2); font-family: monospace; }
+    .sheet-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
 
-    .sheet-section {
-      padding: 14px 18px 0;
-    }
+    .sheet-section { padding: 14px 18px 0; }
     .sheet-label {
       font-size: 9px;
       font-weight: 700;
@@ -475,11 +449,7 @@
       margin-bottom: 8px;
     }
 
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .detail-item {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -487,34 +457,12 @@
       padding: 10px 12px;
     }
     .detail-item.full { grid-column: 1 / -1; }
-    .detail-val {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 2px;
-    }
-    .detail-lbl {
-      font-size: 10px;
-      color: var(--muted2);
-      letter-spacing: 0.3px;
-    }
+    .detail-val  { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .detail-lbl  { font-size: 10px; color: var(--muted2); letter-spacing: 0.3px; }
 
-    .sig-detail {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .sig-detail-bar {
-      flex: 1;
-      height: 6px;
-      background: #1a1a1a;
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .sig-detail-fill {
-      height: 100%;
-      border-radius: 3px;
-    }
+    .sig-detail      { display: flex; align-items: center; gap: 10px; }
+    .sig-detail-bar  { flex: 1; height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; }
+    .sig-detail-fill { height: 100%; border-radius: 3px; }
 
     .ssid-history-item {
       background: var(--surface2);
@@ -526,6 +474,22 @@
       margin-bottom: 6px;
       font-family: monospace;
     }
+
+    /* ── EXPAND BAR ── */
+    .expand-bar {
+      text-align: center;
+      padding: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--muted2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .expand-bar:active { opacity: 0.6; }
 
     /* ── BOTTOM BAR ── */
     .bottom {
@@ -544,12 +508,15 @@
       gap: 8px;
     }
 
-.brand {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 3px;
-      color: var(--wifi);
+    .bottom-left  { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .bottom-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    #last-update {
+      font-size: 10px;
+      color: var(--muted2);
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .action-btn {
@@ -571,22 +538,156 @@
       background: rgba(220,20,60,0.08);
     }
     .action-btn.shutdown { color: #444; }
-    .action-btn:active { opacity: 0.6; }
+    .action-btn:active   { opacity: 0.6; }
 
-    .expand-bar {
-      text-align: center;
-      padding: 12px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: var(--muted2);
+    .list-toggle {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      background: #111;
+      color: #555;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .list-toggle.on  { border-color: rgba(220,20,60,0.4); color: var(--wifi); background: rgba(220,20,60,0.08); }
+    .list-toggle:active { opacity: 0.6; }
+
+    /* ── EXPANDED STATS (stats-only mode) ── */
+    .stats-expanded {
+      display: none;
+      padding: 0 12px 12px;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stats-expanded.visible { display: flex; }
+
+    .pkt-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .stat-big {
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      background: var(--surface);
-      cursor: pointer;
-      margin-top: 4px;
+      padding: 16px 12px;
+      text-align: center;
     }
-    .expand-bar:active { opacity: 0.6; }
+    .stat-big .val {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      font-family: monospace;
+      color: #fff;
+    }
+    .stat-big .lbl {
+      font-size: 8px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted2);
+      margin-top: 6px;
+    }
+    .stat-big.sb-pkts .val { color: var(--sig-bad); }
+    .stat-big.sb-pps  .val { color: var(--sig-mid); }
+
+    /* ── SOURCE ROWS ── */
+    .sources-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .sources-panel-header {
+      padding: 8px 14px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted2);
+      border-bottom: 1px solid var(--border);
+    }
+    .source-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      gap: 10px;
+      border-bottom: 1px solid #111;
+    }
+    .source-row:last-child { border-bottom: none; }
+    .source-row-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .source-row-dot.running { background: var(--sig-good); box-shadow: 0 0 6px var(--sig-good); }
+    .source-row-dot.stopped { background: var(--muted); }
+    .source-row-dot.error   { background: var(--wifi); }
+    .source-row-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      font-family: monospace;
+      min-width: 60px;
+    }
+    .source-row-type {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .source-row-ch {
+      font-size: 11px;
+      color: var(--muted2);
+      font-family: monospace;
+      flex: 1;
+    }
+    .source-row-pkts {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sig-bad);
+      font-family: monospace;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .github-link {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+      color: #444;
+      transition: color 0.2s;
+    }
+    .github-link:hover { color: var(--muted2); }
+    .github-link svg   { width: 15px; height: 15px; fill: currentColor; flex-shrink: 0; }
+    .github-link span  { font-size: 9px; font-weight: 700; letter-spacing: 1px; }
+
+    .obfuscate-btn {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #111;
+      color: var(--muted2);
+      border: 1px solid #222;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .obfuscate-btn.on {
+      background: rgba(255,214,10,0.1);
+      color: var(--sig-mid);
+      border-color: rgba(255,214,10,0.4);
+    }
   </style>
 </head>
 <body>
@@ -594,6 +695,10 @@
 <header>
   <div class="header-row">
     <div class="logo">DOOKU</div>
+    <a class="github-link" href="https://github.com/nsm-barii/dooku" target="_blank" style="position:absolute;left:50%;transform:translateX(-50%);">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>NSM-BARII</span>
+    </a>
     <div class="header-right">
       <span class="session-pill" id="session-pill">00:00:00</span>
       <span class="gps-pill" id="gps-pill">GPS</span>
@@ -603,12 +708,23 @@
   <div class="coords-bar" id="coords-bar"></div>
 
   <div class="stats">
-    <div class="stat s-total">  <div class="val" id="s-total">0</div>  <div class="lbl">Total</div>  </div>
-    <div class="stat s-ap">     <div class="val" id="s-ap">0</div>     <div class="lbl">APs</div>     </div>
-    <div class="stat s-client"> <div class="val" id="s-client">0</div> <div class="lbl">Clients</div> </div>
-    <div class="stat s-ble">    <div class="val" id="s-ble">0</div>    <div class="lbl">BLE</div>     </div>
-    <div class="stat s-new">    <div class="val" id="s-new">0</div>    <div class="lbl">New</div>     </div>
-    <div class="stat s-pkts">   <div class="val" id="s-pkts">—</div>   <div class="lbl">Pkts/s</div> </div>
+    <div class="stat s-total">  <div class="val" id="s-total">—</div>  <div class="lbl">Total</div>   </div>
+    <div class="stat s-ap">     <div class="val" id="s-ap">—</div>     <div class="lbl">APs</div>     </div>
+    <div class="stat s-client"> <div class="val" id="s-client">—</div> <div class="lbl">Clients</div> </div>
+    <div class="stat s-ble">    <div class="val" id="s-ble">—</div>    <div class="lbl">BLE</div>     </div>
+    <div class="stat s-flock">  <div class="val" id="s-flock">—</div>  <div class="lbl">Flock</div>  </div>
+    <div class="stat s-new">    <div class="val" id="s-new">—</div>    <div class="lbl">New</div>     </div>
+  </div>
+
+  <div class="stats-expanded" id="stats-expanded">
+    <div class="pkt-row">
+      <div class="stat-big sb-pkts"><div class="val" id="se-pkts">—</div><div class="lbl">Total Packets</div></div>
+      <div class="stat-big sb-pps"> <div class="val" id="se-pps">—</div> <div class="lbl">Packets / sec</div></div>
+    </div>
+    <div class="sources-panel">
+      <div class="sources-panel-header">Active Sources</div>
+      <div id="se-sources"></div>
+    </div>
   </div>
 
   <div class="filter-bar" id="filter-bar">
@@ -634,13 +750,21 @@
         <button class="pill"        data-enc="wpa3">WPA3</button>
       </div>
     </div>
+    <div class="filter-row" id="flock-row" style="display:none">
+      <div class="pills" id="flock-pills">
+        <button class="pill active" data-flock="all">ALL</button>
+        <button class="pill"        data-flock="wifi">WiFi</button>
+        <button class="pill"        data-flock="ble">BLE</button>
+      </div>
+    </div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active"  data-tab="networks">NETWORKS</div>
-    <div class="tab t-cl"    data-tab="clients">CLIENTS</div>
-    <div class="tab t-ble"   data-tab="ble">BLE</div>
-    <div class="tab t-src"   data-tab="sources">SOURCES</div>
+  <div class="tabs" id="tabs">
+    <div class="tab active"    data-tab="networks">NETWORKS</div>
+    <div class="tab t-cl"      data-tab="clients">CLIENTS</div>
+    <div class="tab t-ble"     data-tab="ble">BLE</div>
+    <div class="tab t-flock"   data-tab="flock">FLOCK</div>
+    <div class="tab t-src"     data-tab="sources">SOURCES</div>
   </div>
 </header>
 
@@ -650,83 +774,71 @@
 <div class="sheet" id="sheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <div class="sheet-title" id="sheet-title"></div>
-    <div class="sheet-sub"  id="sheet-sub"></div>
+    <div class="sheet-title"  id="sheet-title"></div>
+    <div class="sheet-sub"    id="sheet-sub"></div>
     <div class="sheet-badges" id="sheet-badges"></div>
   </div>
   <div id="sheet-body"></div>
 </div>
 
 <div class="bottom">
-  <span id="last-update">Waiting...</span>
-  <button class="obfuscate-btn" id="obfuscate-btn">Hide Info</button>
-  <button class="action-btn wardrive" id="wardrive-btn">WARDRIVE</button>
-  <button class="action-btn" id="wigle-btn">WIGLE</button>
-  <button class="action-btn shutdown" id="shutdown-btn">⏻</button>
+  <div class="bottom-left">
+    <span id="last-update">Waiting...</span>
+  </div>
+  <div class="bottom-right">
+    <button class="list-toggle on" id="feed-toggle-btn" title="Toggle list">☰</button>
+    <button class="obfuscate-btn"          id="obfuscate-btn">Hide Info</button>
+    <button class="action-btn wardrive"    id="wardrive-btn">WARDRIVE</button>
+    <button class="action-btn"             id="wigle-btn">WIGLE</button>
+    <button class="action-btn shutdown"    id="shutdown-btn">⏻</button>
+  </div>
 </div>
 
 <script>
-  // ── STATE ─────────────────────────────────────────────────
+  // ── FLOCK SIGNATURES ──────────────────────────────────────
+  // flock detection is done server-side in flock.py — just read the tagged fields
+  const flockMatch = d => d.flock_match || null;
+  const isFlock    = d => d.flock === true;
 
+
+  // ── STATE ─────────────────────────────────────────────────
   let devices      = [];
   let sources      = [];
   let sysStatus    = null;
   let gpsData      = null;
+  let realCounts   = null;   // from server-side Kismet DB query
   let activeTab    = "networks";
   let activeBand   = "all";
   let activeEnc    = "all";
   let activeSort   = "rssi";
-  let kismetOnline = false;
-  let obfuscated   = false;
-  let showAll      = false;
-  const PAGE_SIZE  = 100;
-
-  const deviceMap  = {};  // mac -> full device object for sheet lookup
-
-  const sessionStart = Date.now() / 1000;
-
-  const $  = id => document.getElementById(id);
-  const pulse       = $("pulse");
-  const feed        = $("feed");
-  const lastUpdate  = $("last-update");
-  const gpsPill     = $("gps-pill");
-  const sessionPill = $("session-pill");
-  const coordsBar   = $("coords-bar");
-
+  let kismetOnline  = false;
+  let obfuscated    = false;
+  let showAll       = false;
+  let feedVisible   = true;
+  let activeFlockFilter = "all";
+  let lastPollTime = null;
   let kismetStartSec = null;
 
-  function maskMac(mac) {
-    if (!mac || !obfuscated) return mac;
-    const parts = mac.split(":");
-    return parts.slice(0, 3).join(":") + ":??:??:??";
-  }
+  const PAGE_SIZE  = 100;
+  const deviceMap  = {};
+  const sessionStart = Date.now() / 1000;
 
-  function maskSsid(ssid) {
-    if (!ssid || !obfuscated) return ssid;
-    if (ssid === "<hidden>" || ssid === "<unknown>") return ssid;
-    const keep = Math.min(3, ssid.length);
-    return ssid.slice(0, keep) + "*".repeat(Math.max(0, ssid.length - keep));
-  }
+  const $ = id => document.getElementById(id);
 
-  function fmtDuration(secs) {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = Math.floor(secs % 60);
-    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-  }
 
+  // ── SESSION TIMER ─────────────────────────────────────────
   setInterval(() => {
     if (!kismetStartSec) return;
-    const elapsed = Math.floor(Date.now() / 1000) - kismetStartSec;
-    sessionPill.textContent = fmtDuration(elapsed);
+    const e = Math.floor(Date.now() / 1000) - kismetStartSec;
+    const h = Math.floor(e / 3600), m = Math.floor((e % 3600) / 60), s = Math.floor(e % 60);
+    $("session-pill").textContent = `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   }, 1000);
 
 
   // ── HELPERS ───────────────────────────────────────────────
-
   function getBand(freq) {
     if (!freq || freq === 0) return null;
-    const mhz = freq > 100000 ? freq / 1000 : freq; // Kismet sends kHz
+    const mhz = freq > 100000 ? freq / 1000 : freq;
     if (mhz >= 2400 && mhz < 2500) return "2.4";
     if (mhz >= 5150 && mhz < 5900) return "5";
     if (mhz >= 5925)                return "6";
@@ -734,7 +846,8 @@
   }
 
   function rssiHTML(rssi) {
-    if (rssi == null || rssi === 0) return `<div class="rssi-wrap"><span class="rssi-val" style="color:var(--muted2)">—</span></div>`;
+    if (rssi == null || rssi === 0)
+      return `<div class="rssi-wrap"><span class="rssi-val" style="color:var(--muted2)">—</span></div>`;
     const pct   = Math.max(4, Math.min(100, ((rssi + 90) / 60) * 100));
     const color = pct > 66 ? "var(--sig-good)" : pct > 33 ? "var(--sig-mid)" : "var(--sig-bad)";
     return `
@@ -747,34 +860,51 @@
   function encBadge(enc) {
     if (!enc || enc === 0) return "";
     const s = String(enc).toUpperCase();
-    if (s.includes("WPA3"))                         return '<span class="badge wpa3">WPA3</span>';
-    if (s.includes("WPA2"))                         return '<span class="badge wpa2">WPA2</span>';
-    if (s.includes("WPA"))                          return '<span class="badge wpa">WPA</span>';
-    if (s.includes("WEP"))                          return '<span class="badge wep">WEP</span>';
-    if (s === "OPEN" || s === "NONE" || s === "OPN" || s.includes("OPEN"))
-                                                    return '<span class="badge open">OPEN</span>';
+    if (s.includes("WPA3")) return '<span class="badge wpa3">WPA3</span>';
+    if (s.includes("WPA2")) return '<span class="badge wpa2">WPA2</span>';
+    if (s.includes("WPA"))  return '<span class="badge wpa">WPA</span>';
+    if (s.includes("WEP"))  return '<span class="badge wep">WEP</span>';
+    if (s === "OPEN" || s === "NONE" || s.includes("OPEN")) return '<span class="badge open">OPEN</span>';
     return "";
   }
 
-  function isNew(d)    { return d.first_seen && d.first_seen > sessionStart - 300; }
-  function hasGps(d)   { return d.geopoint && Array.isArray(d.geopoint) && (d.geopoint[0] !== 0 || d.geopoint[1] !== 0); }
-  function isAP(d)     { return String(d.type || "").includes("AP"); }
-  function isClient(d) { return String(d.type || "").toLowerCase().includes("client"); }
-  function isBLE(d)    { const t = String(d.type || "").toUpperCase(); return t === "BTLE" || t.includes("BLUETOOTH"); }
-
-  function bandMatch(d) {
-    if (activeBand === "all") return true;
-    return getBand(d.frequency) === activeBand;
+  function maskMac(mac) {
+    if (!mac || !obfuscated) return mac;
+    return mac.split(":").slice(0,3).join(":") + ":??:??:??";
   }
 
-  function encMatch(d) {
+  function maskSsid(ssid) {
+    if (!ssid || !obfuscated) return ssid;
+    if (ssid === "<hidden>" || ssid === "<unknown>") return ssid;
+    const keep = Math.min(3, ssid.length);
+    return ssid.slice(0, keep) + "*".repeat(Math.max(0, ssid.length - keep));
+  }
+
+  function fmtPkts(n) {
+    if (!n || n === 0) return "";
+    return n >= 1000 ? `${(n/1000).toFixed(1)}k pkts` : `${n} pkts`;
+  }
+
+  function fmtDuration(secs) {
+    const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = Math.floor(secs % 60);
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  const isNew    = d => d.first_seen && d.first_seen > sessionStart - 300;
+  const hasGps   = d => d.geopoint && Array.isArray(d.geopoint) && (d.geopoint[0] !== 0 || d.geopoint[1] !== 0);
+  const isAP     = d => String(d.type || "").includes("AP");
+  const isClient = d => String(d.type || "").toLowerCase().includes("client");
+  const isBLE    = d => { const t = String(d.type || "").toUpperCase(); return t === "BTLE" || t.includes("BLUETOOTH"); };
+
+  const bandMatch = d => activeBand === "all" || getBand(d.frequency) === activeBand;
+  const encMatch  = d => {
     if (activeEnc === "all") return true;
     const s = String(d.encryption || "").toUpperCase();
     if (activeEnc === "open") return !s.includes("WPA") && !s.includes("WEP");
     if (activeEnc === "wpa2") return s.includes("WPA2") && !s.includes("WPA3");
     if (activeEnc === "wpa3") return s.includes("WPA3");
     return true;
-  }
+  };
 
   function sorted(arr) {
     return [...arr].sort((a, b) => {
@@ -786,29 +916,21 @@
     });
   }
 
-  function fmtPkts(n) {
-    if (!n || n === 0) return "";
-    return n >= 1000 ? `${(n/1000).toFixed(1)}k pkts` : `${n} pkts`;
-  }
-
 
   // ── CARD RENDERERS ────────────────────────────────────────
-
   function apCard(d) {
-    const ssid    = maskSsid((d.ssid && d.ssid !== 0) ? d.ssid : (d.name || "<hidden>"));
-    const mac     = maskMac(d.mac || "");
-    const band    = getBand(d.frequency);
-    const bandStr = band ? `${band}GHz` : "";
-    const ch      = d.channel  || "?";
-    const vendor  = d.vendor   || "";
-    const pkts    = fmtPkts(d.packets);
-    const meta    = [ch !== "?" ? `ch ${ch}` : "", bandStr, pkts].filter(Boolean).join(" · ");
-
+    const ssid   = maskSsid((d.ssid && d.ssid !== 0) ? d.ssid : (d.name || "<hidden>"));
+    const mac    = maskMac(d.mac || "");
+    const band   = getBand(d.frequency);
+    const ch     = d.channel || "?";
+    const meta   = [ch !== "?" ? `ch ${ch}` : "", band ? `${band}GHz` : "", fmtPkts(d.packets)].filter(Boolean).join(" · ");
+    const flock  = isFlock(d) ? '<span class="badge b-flock">FLOCK</span>' : "";
     return `
       <div class="card ap" onclick="openSheet(deviceMap['${d.mac}'])">
         <div class="card-top">
           <div class="badges">
             ${encBadge(d.encryption)}
+            ${flock}
             ${d.clients > 0 ? `<span class="badge b-cl">${d.clients} CLI</span>` : ""}
             ${isNew(d)  ? '<span class="badge b-new">NEW</span>' : ""}
             ${hasGps(d) ? '<span class="badge b-gps">GPS</span>' : ""}
@@ -816,19 +938,17 @@
           ${rssiHTML(d.rssi)}
         </div>
         <div class="device-name">${ssid}</div>
-        <div class="device-sub">${mac}${vendor ? " · " + vendor : ""}</div>
+        <div class="device-sub">${mac}${d.vendor ? " · " + d.vendor : ""}</div>
         ${meta ? `<div class="device-meta">${meta}</div>` : ""}
       </div>`;
   }
 
   function clientCard(d) {
-    const name   = maskSsid(d.name) || maskMac(d.mac) || "—";
-    const sub    = d.name && d.mac ? maskMac(d.mac) : "";
-    const vendor = d.vendor || "";
-    const band   = getBand(d.frequency);
-    const ch     = d.channel || "?";
-    const meta   = [ch !== "?" ? `ch ${ch}` : "", band ? `${band}GHz` : "", fmtPkts(d.packets)].filter(Boolean).join(" · ");
-
+    const name  = maskSsid(d.name) || maskMac(d.mac) || "—";
+    const sub   = d.name && d.mac ? maskMac(d.mac) : "";
+    const band  = getBand(d.frequency);
+    const ch    = d.channel || "?";
+    const meta  = [ch !== "?" ? `ch ${ch}` : "", band ? `${band}GHz` : "", fmtPkts(d.packets)].filter(Boolean).join(" · ");
     return `
       <div class="card client" onclick="openSheet(deviceMap['${d.mac}'])">
         <div class="card-top">
@@ -839,44 +959,76 @@
           ${rssiHTML(d.rssi)}
         </div>
         <div class="device-name">${name}</div>
-        <div class="device-sub">${sub}${vendor ? (sub ? " · " : "") + vendor : ""}</div>
+        <div class="device-sub">${sub}${d.vendor ? (sub ? " · " : "") + d.vendor : ""}</div>
         ${meta ? `<div class="device-meta">${meta}</div>` : ""}
       </div>`;
   }
 
   function bleCard(d) {
-    const name   = maskSsid(d.name || "<unknown>");
-    const vendor = d.vendor || "";
-    const pkts   = fmtPkts(d.packets);
-    const sub    = String(d.type || "").toUpperCase();
-
+    const name  = maskSsid(d.name || "<unknown>");
+    const sub   = String(d.type || "").toUpperCase();
+    const flock = isFlock(d) ? '<span class="badge b-flock">FLOCK</span>' : "";
     return `
       <div class="card ble" onclick="openSheet(deviceMap['${d.mac}'])">
         <div class="card-top">
           <div class="badges">
             <span class="badge b-ble">${sub || "BLE"}</span>
+            ${flock}
             ${isNew(d) ? '<span class="badge b-new">NEW</span>' : ""}
           </div>
           ${rssiHTML(d.rssi)}
         </div>
         <div class="device-name">${name}</div>
-        <div class="device-sub">${maskMac(d.mac) || ""}${vendor ? " · " + vendor : ""}</div>
-        ${pkts ? `<div class="device-meta">${pkts}</div>` : ""}
+        <div class="device-sub">${maskMac(d.mac) || ""}${d.vendor ? " · " + d.vendor : ""}</div>
+        ${fmtPkts(d.packets) ? `<div class="device-meta">${fmtPkts(d.packets)}</div>` : ""}
+      </div>`;
+  }
+
+  function flockCard(d) {
+    const ssid  = maskSsid((d.ssid && d.ssid !== 0) ? d.ssid : (d.name || "<unknown>"));
+    const mac   = maskMac(d.mac || "");
+    const kind  = isBLE(d) ? "BLE" : isAP(d) ? "WiFi AP" : "WiFi";
+    const band  = getBand(d.frequency);
+    const ch    = d.channel || "?";
+    const meta  = [kind, ch !== "?" ? `ch ${ch}` : "", band ? `${band}GHz` : "", fmtPkts(d.packets)].filter(Boolean).join(" · ");
+    const c     = d.flock_checks || {};
+    const checks = [
+      { key: "ssid",     label: "SSID"    },
+      { key: "mac",      label: "MAC"     },
+      { key: "ble_name", label: "BLE Name"},
+      { key: "probe",    label: "Probe"   },
+      { key: "uuid",     label: "UUID"    },
+    ].map(({ key, label }) =>
+      `<span class="flock-check ${c[key] ? "hit" : "miss"}">${c[key] ? "✓" : "✗"} ${label}</span>`
+    ).join("");
+
+    return `
+      <div class="card flock" onclick="openSheet(deviceMap['${d.mac}'])">
+        <div class="card-top">
+          <div class="badges">
+            <span class="badge b-flock">⚠ FLOCK</span>
+            ${isNew(d)  ? '<span class="badge b-new">NEW</span>' : ""}
+            ${hasGps(d) ? '<span class="badge b-gps">GPS</span>' : ""}
+          </div>
+          ${rssiHTML(d.rssi)}
+        </div>
+        <div class="device-name">${ssid}</div>
+        <div class="device-sub">${mac}${d.vendor ? " · " + d.vendor : ""}</div>
+        <div class="flock-checks">${checks}</div>
+        ${meta ? `<div class="device-meta" style="color:rgba(255,149,0,0.5);margin-top:2px">${meta}</div>` : ""}
       </div>`;
   }
 
   function sourceCard(s) {
     const name    = s["kismet.datasource.name"]      || "Unknown";
     const iface   = s["kismet.datasource.interface"] || "?";
-    const running = s["kismet.datasource.running"]   === 1 || s["kismet.datasource.running"]  === true;
-    const error   = s["kismet.datasource.error"]     === 1 || s["kismet.datasource.error"]    === true;
+    const running = s["kismet.datasource.running"]  === 1 || s["kismet.datasource.running"] === true;
+    const error   = s["kismet.datasource.error"]    === 1 || s["kismet.datasource.error"]   === true;
     const ch      = s["kismet.datasource.channel"]   || "—";
     const numSrc  = s["kismet.datasource.num_packets"];
-
-    const cls  = error ? "src-err" : running ? "src-ok" : "src-stopped";
-    const txt  = error ? "ERROR"   : running ? "RUNNING" : "STOPPED";
-    const pkts = numSrc > 0 ? ` · ${numSrc.toLocaleString()} pkts` : "";
-
+    const cls     = error ? "src-err" : running ? "src-ok" : "src-stopped";
+    const txt     = error ? "ERROR"   : running ? "RUNNING" : "STOPPED";
+    const pkts    = numSrc > 0 ? ` · ${numSrc.toLocaleString()} pkts` : "";
     return `
       <div class="card source">
         <div class="card-top">
@@ -889,10 +1041,13 @@
 
 
   // ── RENDER ────────────────────────────────────────────────
-
   function render() {
+    const feed = $("feed");
+    if (!feedVisible) { feed.className = "feed hidden"; return; }
+    feed.className = "feed";
+
     if (!kismetOnline) {
-      feed.innerHTML = `<div class="offline-banner">KISMET OFFLINE — start Kismet to begin capture</div>`;
+      feed.innerHTML = `<div class="offline-banner">KISMET OFFLINE — tap WARDRIVE to start capture</div>`;
       return;
     }
 
@@ -907,6 +1062,11 @@
     if      (activeTab === "networks") list = list.filter(isAP);
     else if (activeTab === "clients")  list = list.filter(isClient);
     else if (activeTab === "ble")      list = list.filter(isBLE);
+    else if (activeTab === "flock") {
+      list = list.filter(isFlock);
+      if      (activeFlockFilter === "wifi") list = list.filter(d => !isBLE(d));
+      else if (activeFlockFilter === "ble")  list = list.filter(isBLE);
+    }
 
     if (activeTab === "networks" || activeTab === "clients") list = list.filter(bandMatch);
     if (activeTab === "networks") list = list.filter(encMatch);
@@ -914,52 +1074,86 @@
     list = sorted(list);
 
     if (!list.length) {
-      feed.innerHTML = `<div class="empty"><div class="empty-icon">⚔</div>No devices match filters</div>`;
+      const icons = { networks: "⚡", clients: "📡", ble: "🔵", flock: "⚠" };
+      feed.innerHTML = `<div class="empty"><div class="empty-icon">${icons[activeTab] || "⚔"}</div>No devices match filters</div>`;
       return;
     }
 
-    const total   = list.length;
     const visible = showAll ? list : list.slice(0, PAGE_SIZE);
-
     let html = "";
     if      (activeTab === "networks") html = visible.map(apCard).join("");
     else if (activeTab === "clients")  html = visible.map(clientCard).join("");
     else if (activeTab === "ble")      html = visible.map(bleCard).join("");
+    else if (activeTab === "flock")    html = visible.map(flockCard).join("");
 
-    if (total > PAGE_SIZE) {
+    if (list.length > PAGE_SIZE) {
       html += showAll
         ? `<div class="expand-bar" onclick="toggleShow()">▲ Show less</div>`
-        : `<div class="expand-bar" onclick="toggleShow()">▼ Show all ${total.toLocaleString()}</div>`;
+        : `<div class="expand-bar" onclick="toggleShow()">▼ Show all ${list.length.toLocaleString()}</div>`;
     }
 
     feed.innerHTML = html;
   }
 
+  function toggleShow() {
+    showAll = !showAll;
+    render();
+    if (!showAll) window.scrollTo(0, 0);
+  }
+
 
   // ── STATS ─────────────────────────────────────────────────
-
   function updateStats(counts) {
     const newCnt = devices.filter(isNew).length;
 
     if (counts) {
-      $("s-total").textContent  = counts.total   || 0;
-      $("s-ap").textContent     = counts.aps     || 0;
-      $("s-client").textContent = counts.clients || 0;
-      $("s-ble").textContent    = counts.ble     || 0;
-    } else {
-      $("s-total").textContent  = devices.length;
-      $("s-ap").textContent     = devices.filter(isAP).length;
-      $("s-client").textContent = devices.filter(isClient).length;
-      $("s-ble").textContent    = devices.filter(isBLE).length;
+      $("s-total").textContent  = counts.total   != null ? counts.total.toLocaleString()   : "—";
+      $("s-ap").textContent     = counts.aps     != null ? counts.aps.toLocaleString()     : "—";
+      $("s-client").textContent = counts.clients != null ? counts.clients.toLocaleString() : "—";
+      $("s-ble").textContent    = counts.ble     != null ? counts.ble.toLocaleString()     : "—";
+      $("s-flock").textContent  = counts.flock   != null ? counts.flock.toLocaleString()   : "—";
     }
     $("s-new").textContent = newCnt;
 
+    // expanded stats — computed from sources
     if (sources.length) {
-      const totalRate = sources.reduce((sum, s) => {
+      const totalPkts = sources.reduce((sum, s) => sum + (s["kismet.datasource.num_packets"] || 0), 0);
+      const pps       = sources.reduce((sum, s) => {
         const rrd = s["kismet.datasource.packets_rrd"];
         return sum + (rrd ? (rrd["kismet.common.rrd.last_value_n1"] || 0) : 0);
       }, 0);
-      $("s-pkts").textContent = totalRate > 0 ? totalRate : "—";
+
+      $("se-pkts").textContent = totalPkts.toLocaleString();
+      $("se-pps").textContent  = pps > 0 ? pps.toLocaleString() : "—";
+
+      // per-source rows — scales to any number of adapters / SDRs
+      $("se-sources").innerHTML = sources.map(s => {
+        const name    = s["kismet.datasource.interface"] || s["kismet.datasource.name"] || "?";
+        const running = s["kismet.datasource.running"] === 1 || s["kismet.datasource.running"] === true;
+        const error   = s["kismet.datasource.error"]   === 1 || s["kismet.datasource.error"]   === true;
+        const pkts    = (s["kismet.datasource.num_packets"] || 0).toLocaleString();
+        const hopping = s["kismet.datasource.hopping"];
+        const hopChs  = s["kismet.datasource.hop_channels"] || [];
+        const ch      = hopping
+          ? `hopping ${hopChs.length} ch`
+          : (s["kismet.datasource.channel"] || "—");
+        const dtype   = String(s["kismet.datasource.type_driver"]?.["kismet.datasource.driver.type"] || "").toLowerCase();
+        const dotCls  = error ? "error" : running ? "running" : "stopped";
+
+        let typeLabel, typeColor;
+        if      (dtype.includes("bluetooth")) { typeLabel = "BLE";  typeColor = "color:var(--ble);background:rgba(78,170,255,0.1)"; }
+        else if (dtype.includes("sdr") || dtype.includes("rtl")) { typeLabel = "SDR";  typeColor = "color:var(--sig-good);background:rgba(0,210,106,0.1)"; }
+        else                                  { typeLabel = "WiFi"; typeColor = "color:var(--wifi);background:rgba(220,20,60,0.1)"; }
+
+        return `
+          <div class="source-row">
+            <div class="source-row-dot ${dotCls}"></div>
+            <div class="source-row-name">${name}</div>
+            <span class="source-row-type" style="${typeColor}">${typeLabel}</span>
+            <div class="source-row-ch">ch ${ch}</div>
+            <div class="source-row-pkts">${pkts} pkts</div>
+          </div>`;
+      }).join("");
     }
 
     if (sysStatus) {
@@ -968,57 +1162,49 @@
     }
 
     if (gpsData) {
-      const fix    = gpsData["kismet.common.location.fix"];
-      const gp     = gpsData["kismet.common.location.geopoint"];
+      const fix = gpsData["kismet.common.location.fix"];
+      const gp  = gpsData["kismet.common.location.geopoint"];
       if (fix >= 2 && gp && (gp[0] !== 0 || gp[1] !== 0)) {
-        const lat = gp[1].toFixed(6);
-        const lon = gp[0].toFixed(6);
+        const lat = gp[1].toFixed(6), lon = gp[0].toFixed(6);
         const spd = gpsData["kismet.common.location.speed"];
         const spdStr = spd > 0 ? ` · ${(spd * 3.6).toFixed(1)} km/h` : "";
-        gpsPill.className    = "gps-pill fix";
-        gpsPill.textContent  = "GPS FIX";
-        coordsBar.className  = "coords-bar visible";
-        coordsBar.textContent = `${lat}, ${lon}${spdStr}`;
+        $("gps-pill").className   = "gps-pill fix";
+        $("gps-pill").textContent = "GPS FIX";
+        $("coords-bar").className = "coords-bar visible";
+        $("coords-bar").textContent = `${lat}, ${lon}${spdStr}`;
       } else {
-        gpsPill.className   = "gps-pill";
-        gpsPill.textContent = "GPS";
-        coordsBar.className = "coords-bar";
+        $("gps-pill").className   = "gps-pill";
+        $("gps-pill").textContent = "GPS";
+        $("coords-bar").className = "coords-bar";
       }
     }
   }
 
 
   // ── POLLING ───────────────────────────────────────────────
-
-  let lastPollTime = null;
-
   async function pollDevices() {
     const url = lastPollTime
       ? `/kismet/devices?since=${Math.floor(lastPollTime - 1)}`
       : "/kismet/devices";
-
     try {
       const now  = Date.now() / 1000;
       const res  = await fetch(url);
       const data = await res.json();
-
       if (res.ok && Array.isArray(data)) {
-        // merge delta into map — never replace everything
         data.forEach(d => { if (d.mac) deviceMap[d.mac] = d; });
         devices      = Object.values(deviceMap);
         lastPollTime = now;
         kismetOnline = true;
-        pulse.className        = "pulse live";
-        lastUpdate.textContent = `${devices.length} loaded · ${new Date().toLocaleTimeString()}`;
-        updateStats();
+        $("pulse").className        = "pulse live";
+        $("last-update").textContent = `${devices.length.toLocaleString()} loaded · ${new Date().toLocaleTimeString()}`;
         render();
       } else {
         throw new Error(data.error || "bad response");
       }
     } catch {
-      kismetOnline           = false;
-      pulse.className        = "pulse";
-      lastUpdate.textContent = "Kismet offline";
+      kismetOnline = false;
+      $("pulse").className         = "pulse";
+      $("last-update").textContent = "Kismet offline";
       render();
     }
   }
@@ -1028,10 +1214,11 @@
       const res  = await fetch("/kismet/status");
       const data = await res.json();
       if (res.ok && !data.error) {
-        sysStatus = data.status  || null;
-        sources   = data.sources || [];
-        gpsData   = data.gps     || null;
-        updateStats(data.counts || null);
+        sysStatus  = data.status  || null;
+        sources    = data.sources || [];
+        gpsData    = data.gps     || null;
+        realCounts = data.counts  || null;
+        updateStats(realCounts);
         if (activeTab === "sources") render();
       }
     } catch {}
@@ -1039,18 +1226,19 @@
 
 
   // ── EVENT HANDLERS ────────────────────────────────────────
-
   document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
       tab.classList.add("active");
       activeTab = tab.dataset.tab;
-
-      const showFilter  = activeTab === "networks" || activeTab === "clients";
-      const showEncRow  = activeTab === "networks";
+      const showFilter = activeTab === "networks" || activeTab === "clients" || activeTab === "flock";
+      const showEnc    = activeTab === "networks";
+      const showFlock  = activeTab === "flock";
       $("filter-bar").style.display = showFilter ? "" : "none";
-      $("enc-row").style.display    = showEncRow  ? "" : "none";
-
+      $("enc-row").style.display    = showEnc    ? "" : "none";
+      $("flock-row").style.display  = showFlock  ? "" : "none";
+      if (!showFlock) { activeFlockFilter = "all"; document.querySelectorAll(".pill[data-flock]").forEach(x => x.classList.toggle("active", x.dataset.flock === "all")); }
+      showAll = false;
       render();
     });
   });
@@ -1073,6 +1261,15 @@
     });
   });
 
+  document.querySelectorAll(".pill[data-flock]").forEach(p => {
+    p.addEventListener("click", () => {
+      document.querySelectorAll(".pill[data-flock]").forEach(x => x.classList.remove("active"));
+      p.classList.add("active");
+      activeFlockFilter = p.dataset.flock;
+      render();
+    });
+  });
+
   $("sort-select").addEventListener("change", e => {
     activeSort = e.target.value;
     render();
@@ -1080,17 +1277,49 @@
 
   $("obfuscate-btn").addEventListener("click", () => {
     obfuscated = !obfuscated;
-    const btn  = $("obfuscate-btn");
-    btn.textContent = obfuscated ? "Show Info" : "Hide Info";
-    btn.className   = obfuscated ? "obfuscate-btn on" : "obfuscate-btn";
-    if (obfuscated) coordsBar.className = "coords-bar";
+    $("obfuscate-btn").textContent  = obfuscated ? "Show Info" : "Hide Info";
+    $("obfuscate-btn").className    = obfuscated ? "obfuscate-btn on" : "obfuscate-btn";
+    if (obfuscated) $("coords-bar").className = "coords-bar";
     render();
   });
 
+  $("feed-toggle-btn").addEventListener("click", () => {
+    feedVisible = !feedVisible;
+    $("feed-toggle-btn").className      = feedVisible ? "list-toggle on" : "list-toggle";
+    $("stats-expanded").className       = feedVisible ? "stats-expanded" : "stats-expanded visible";
+    $("filter-bar").style.display       = feedVisible && (activeTab === "networks" || activeTab === "clients") ? "" : feedVisible ? "none" : "none";
+    $("tabs").style.display             = feedVisible ? "" : "none";
+    render();
+  });
+
+  $("wardrive-btn").addEventListener("click", async () => {
+    const btn = $("wardrive-btn");
+    btn.textContent = "STARTING...";
+    btn.style.opacity = "0.5";
+    await fetch("/wardrive");
+    setTimeout(() => { btn.textContent = "WARDRIVE"; btn.style.opacity = ""; }, 3000);
+  });
+
+  $("wigle-btn").addEventListener("click", async () => {
+    const btn = $("wigle-btn");
+    btn.textContent = "UPLOADING...";
+    btn.style.opacity = "0.5";
+    try {
+      const res  = await fetch("/wigle-upload");
+      const data = await res.json();
+      alert(data.error ? "WiGLE error: " + data.error : "WiGLE: " + data.message);
+    } catch { alert("WiGLE upload failed — check connection"); }
+    btn.textContent = "WIGLE";
+    btn.style.opacity = "";
+  });
+
+  $("shutdown-btn").addEventListener("click", async () => {
+    if (!confirm("Shut down the Pi?")) return;
+    await fetch("/shutdown");
+  });
 
 
   // ── DETAIL SHEET ─────────────────────────────────────────
-
   const sheet        = $("sheet");
   const sheetOverlay = $("sheet-overlay");
 
@@ -1106,32 +1335,41 @@
     const mac    = maskMac(d.mac || "");
     const vendor = d.vendor || "";
 
-    $("sheet-title").textContent  = ssid;
-    $("sheet-sub").textContent    = mac + (vendor ? " · " + vendor : "");
-    $("sheet-badges").innerHTML   = [
+    $("sheet-title").textContent = ssid;
+    $("sheet-sub").textContent   = mac + (vendor ? " · " + vendor : "");
+    const flockBadges = isFlock(d) ? (() => {
+      const c = d.flock_checks || {};
+      const checks = [
+        { key: "ssid", label: "SSID" }, { key: "mac", label: "MAC" },
+        { key: "ble_name", label: "BLE Name" }, { key: "probe", label: "Probe" }, { key: "uuid", label: "UUID" },
+      ].map(({ key, label }) =>
+        `<span class="flock-check ${c[key] ? "hit" : "miss"}">${c[key] ? "✓" : "✗"} ${label}</span>`
+      ).join("");
+      return `<span class="badge b-flock">⚠ FLOCK CAM</span><div class="flock-checks" style="margin-top:6px">${checks}</div>`;
+    })() : "";
+
+    $("sheet-badges").innerHTML  = [
       encBadge(d.encryption),
+      flockBadges,
       d.clients > 0 ? `<span class="badge b-cl">${d.clients} CLI</span>` : "",
-      isNew(d)       ? '<span class="badge b-new">NEW</span>'             : "",
-      hasGps(d)      ? '<span class="badge b-gps">GPS</span>'             : "",
+      isNew(d)      ? '<span class="badge b-new">NEW</span>'  : "",
+      hasGps(d)     ? '<span class="badge b-gps">GPS</span>'  : "",
     ].join("");
 
     const fmtTime = ts => ts ? new Date(ts * 1000).toLocaleTimeString() : "—";
     const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString() : "—";
-    const active  = (d.first_seen && d.last_seen)
-      ? fmtDuration(d.last_seen - d.first_seen) : "—";
-
+    const active  = (d.first_seen && d.last_seen) ? fmtDuration(d.last_seen - d.first_seen) : "—";
     const sigPct  = rssi => Math.max(4, Math.min(100, ((rssi + 90) / 60) * 100));
     const sigCol  = rssi => sigPct(rssi) > 66 ? "var(--sig-good)" : sigPct(rssi) > 33 ? "var(--sig-mid)" : "var(--sig-bad)";
-
     const band    = getBand(d.frequency);
     const freq    = d.frequency ? `${(d.frequency / 1000).toFixed(0)} MHz` : "—";
-    const rate    = d.max_rate  ? `${(d.max_rate / 10).toFixed(0)} Mbps`  : "—";
+    const rate    = d.max_rate  ? `${(d.max_rate / 10).toFixed(0)} Mbps`   : "—";
     const country = (d.country && d.country !== "0") ? d.country : "—";
-
     const hsCount = Array.isArray(d.handshakes) ? d.handshakes.length
                   : (d.handshakes && d.handshakes > 0) ? d.handshakes : 0;
+    const geoStr  = hasGps(d) && Array.isArray(d.geopoint)
+      ? `${d.geopoint[1].toFixed(6)}, ${d.geopoint[0].toFixed(6)}` : null;
 
-    // SSID history from ssid_map
     let ssidHistory = "";
     if (Array.isArray(d.ssid_map) && d.ssid_map.length > 1) {
       ssidHistory = `
@@ -1140,9 +1378,6 @@
           ${d.ssid_map.map(s => `<div class="ssid-history-item">${maskSsid(s["dot11.advertisedssid.ssid"] || "hidden")}</div>`).join("")}
         </div>`;
     }
-
-    const geoStr = hasGps(d) && Array.isArray(d.geopoint)
-      ? `${d.geopoint[1].toFixed(6)}, ${d.geopoint[0].toFixed(6)}` : null;
 
     $("sheet-body").innerHTML = `
       <div class="sheet-section">
@@ -1185,7 +1420,7 @@
             <div class="detail-lbl">Country</div>
           </div>
           <div class="detail-item">
-            <div class="detail-val" style="color:${hsCount > 0 ? 'var(--sig-mid)' : 'var(--muted2)'}">${hsCount}</div>
+            <div class="detail-val" style="color:${hsCount > 0 ? "var(--sig-mid)" : "var(--muted2)"}">${hsCount}</div>
             <div class="detail-lbl">Handshakes</div>
           </div>
         </div>
@@ -1241,44 +1476,10 @@
 
 
   // ── START ─────────────────────────────────────────────────
-
   pollDevices();
   pollStatus();
-  setInterval(pollDevices, 2000);
-  setInterval(pollStatus,  5000);
-
-  function toggleShow() {
-    showAll = !showAll;
-    render();
-    if (!showAll) window.scrollTo(0, 0);
-  }
-
-  $("wardrive-btn").addEventListener("click", async () => {
-    const btn = $("wardrive-btn");
-    btn.textContent = "STARTING...";
-    btn.style.opacity = "0.5";
-    await fetch("/wardrive");
-    setTimeout(() => { btn.textContent = "WARDRIVE"; btn.style.opacity = ""; }, 3000);
-  });
-
-  $("wigle-btn").addEventListener("click", async () => {
-    const btn = $("wigle-btn");
-    btn.textContent = "UPLOADING...";
-    btn.style.opacity = "0.5";
-    try {
-      const res  = await fetch("/wigle-upload");
-      const data = await res.json();
-      if (data.error) alert("WiGLE: " + data.error);
-      else alert("WiGLE upload OK — " + (data.file || ""));
-    } catch { alert("WiGLE upload failed"); }
-    btn.textContent = "WIGLE";
-    btn.style.opacity = "";
-  });
-
-  $("shutdown-btn").addEventListener("click", async () => {
-    if (!confirm("Shut down the Pi?")) return;
-    await fetch("/shutdown");
-  });
+  setInterval(pollDevices, 3000);
+  setInterval(pollStatus,  3000);
 </script>
 </body>
 </html>
