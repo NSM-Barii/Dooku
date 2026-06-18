@@ -1,32 +1,21 @@
 # THIS MODULE WILL HANDLE KISMET REST API INTERACTION
 
 
+# UI IMPORTS
+from rich.console import Console
+
+
 # ETC IMPORTS
 import urllib.request, urllib.error, json, base64
 from pathlib import Path
 
 
 # CONSTANTS
+console     = Console()
 KISMET_URL  = "http://127.0.0.1:2501"
 KISMET_CONF = Path.home() / ".kismet" / "kismet_httpd.conf"
-
-# Default credentials written by start.py on first boot
 KISMET_USER = "kismet"
 KISMET_PASS = "dooku"
-
-FIELDS = [
-    ["kismet.device.base.macaddr",                                                                    "mac"        ],
-    ["kismet.device.base.name",                                                                       "name"       ],
-    ["kismet.device.base.type",                                                                       "type"       ],
-    ["kismet.device.base.signal/kismet.common.signal.last_signal",                                    "rssi"       ],
-    ["kismet.device.base.channel",                                                                    "channel"    ],
-    ["kismet.device.base.frequency",                                                                  "frequency"  ],
-    ["kismet.device.base.manuf",                                                                      "vendor"     ],
-    ["kismet.device.base.last_time",                                                                  "last_seen"  ],
-    ["kismet.device.base.first_time",                                                                 "first_seen" ],
-    ["kismet.device.base.packets/kismet.device.base.packets.total",                                  "packets"    ],
-    ["dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.crypt_string",         "encryption" ],
-]
 
 
 
@@ -50,7 +39,8 @@ class Kismet_Client():
             for line in KISMET_CONF.read_text().splitlines():
                 if line.startswith("httpd_username"): user = line.split("=", 1)[1].strip()
                 if line.startswith("httpd_password"): pw   = line.split("=", 1)[1].strip()
-        except Exception: pass
+        except Exception as e:
+            console.print(f"[bold red][!] Could not read Kismet config:[bold yellow] {e}")
 
         token     = base64.b64encode(f"{user}:{pw}".encode()).decode()
         cls._auth = f"Basic {token}"
@@ -59,29 +49,71 @@ class Kismet_Client():
 
 
     @classmethod
-    def get_devices(cls):
-        """Pull all devices from Kismet"""
+    def _post(cls, path, body):
+        """POST request to Kismet REST API"""
 
-        auth = cls._get_auth()
-        if not auth: return None, "Kismet credentials not found — run Kismet once to set up"
-
-        body = json.dumps({"fields": FIELDS}).encode()
-        req  = urllib.request.Request(
-            f"{KISMET_URL}/devices/views/all/devices.json",
+        req = urllib.request.Request(
+            f"{KISMET_URL}{path}",
             data=body,
             method="POST",
             headers={
-                "Authorization": auth,
+                "Authorization": cls._get_auth(),
                 "Content-Type":  "application/json"
             }
         )
 
-        try:
-            with urllib.request.urlopen(req, timeout=3) as r:
-                data = json.loads(r.read())
-                # Kismet returns bare array or {"devices": [...]} depending on version
-                if isinstance(data, dict): data = data.get("devices", [])
-                return data, None
+        with urllib.request.urlopen(req, timeout=5) as r:
+            data = json.loads(r.read())
+            return data.get("devices", data) if isinstance(data, dict) else data
 
-        except urllib.error.URLError:   return None, "Kismet not running"
-        except Exception as e:          return None, str(e)
+
+    @classmethod
+    def _get(cls, path):
+        """GET request to Kismet REST API"""
+
+        req = urllib.request.Request(
+            f"{KISMET_URL}{path}",
+            headers={"Authorization": cls._get_auth()}
+        )
+
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return json.loads(r.read())
+
+
+    @classmethod
+    def get_devices(cls, fields):
+        """Pull devices from Kismet with specified fields"""
+
+        console.print("[bold green][+][/bold green]  Fetching devices from Kismet...")
+
+        try:
+            body    = json.dumps({"fields": fields}).encode()
+            devices = cls._post("/devices/views/all/devices.json", body)
+            console.print(f"[bold green][+][/bold green]  Got [bold yellow]{len(devices)}[/bold yellow] devices")
+            return devices, None
+
+        except urllib.error.URLError:
+            console.print("[bold red][!] Kismet not running[/bold red]")
+            return None, "Kismet not running"
+
+        except Exception as e:
+            console.print(f"[bold red][!] Kismet error:[bold yellow] {e}")
+            return None, str(e)
+
+
+    @classmethod
+    def get_status(cls):
+        """Pull system status from Kismet"""
+
+        try:    return cls._get("/system/status.json"), None
+        except urllib.error.URLError: return None, "Kismet not running"
+        except Exception as e:        return None, str(e)
+
+
+    @classmethod
+    def get_sources(cls):
+        """Pull all datasources from Kismet"""
+
+        try:    return cls._get("/datasource/all_sources.json"), None
+        except urllib.error.URLError: return None, "Kismet not running"
+        except Exception as e:        return None, str(e)
